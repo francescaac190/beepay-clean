@@ -41,38 +41,52 @@ class PerfilModel extends Perfil {
         );
 
   factory PerfilModel.fromJson(Map<String, dynamic> json) {
+    final j = json;
+
+    final tarjetasJson = (j['tarjetas'] as List? ?? []);
+    final facturacionJson = (j['facturacion'] as List? ?? []);
+
     return PerfilModel(
-      id: json["id"],
-      name: json["name"],
-      apellido: json["apellido"],
-      email: json["email"],
-      ci: json["ci"],
-      cel: json["cel"],
-      fechaNacimiento: json["fecha_nacimiento"],
-      sexo: json["sexo"],
-      categoria: json["categoria"],
-      logoCategoria: json["logo_categoria"],
-      pais: json["pais"],
-      ciudad: json["ciudad"],
-      direccion: json["direccion"],
-      fotoPerfil: json["foto_perfil"],
-      codigo: json["codigo"],
-      tarjetas: (json["tarjetas"] as List)
-          .map((tarjeta) => Tarjeta(
-                nombre: tarjeta["nombre"],
-                token: tarjeta["token"],
-                tarjeta: tarjeta["tarjeta"],
-                marca: tarjeta["marca"],
-                expiracion: tarjeta["expiracion"],
-              ))
-          .toList(),
-      facturacion: (json["facturacion"] as List)
-          .map((fact) => Facturacion(
-                id: fact["id"],
-                nit: fact["nit"],
-                razonSocial: fact["razon_social"],
-              ))
-          .toList(),
+      id: j['id'] ?? 0,
+      name: (j['name'] ?? '').toString(),
+      apellido: (j['apellido'] ?? '').toString(),
+      email: (j['email'] ?? '').toString(),
+      ci: (j['ci'] ?? '').toString(),
+      cel: (j['cel'] ?? '').toString(),
+
+      // Estos vienen null en tu log → convertir a ''
+      fechaNacimiento: (j['fecha_nacimiento'] ?? '').toString(),
+      sexo: (j['sexo'] ?? '').toString(),
+      pais: (j['pais'] ?? '').toString(),
+      ciudad: (j['ciudad'] ?? '').toString(),
+      direccion: (j['direccion'] ?? '').toString(),
+
+      categoria: (j['categoria'] ?? '').toString(),
+      logoCategoria: (j['logo_categoria'] ?? '').toString(),
+
+      // En muchas respuestas no vienen; normalizamos a ''
+      fotoPerfil: (j['foto_perfil'] ?? '').toString(),
+      codigo: (j['codigo'] ?? '').toString(),
+
+      tarjetas: tarjetasJson.map((t) {
+        final tt = t as Map<String, dynamic>? ?? {};
+        return Tarjeta(
+          nombre: (tt['nombre'] ?? '').toString(),
+          token: (tt['token'] ?? '').toString(),
+          tarjeta: (tt['tarjeta'] ?? '').toString(),
+          marca: (tt['marca'] ?? '').toString(),
+          expiracion: (tt['expiracion'] ?? '').toString(),
+        );
+      }).toList(),
+
+      facturacion: facturacionJson.map((f) {
+        final ff = f as Map<String, dynamic>? ?? {};
+        return Facturacion(
+          id: (ff['id'] is int) ? (ff['id'] ?? 0) : int.tryParse('${ff['id']}') ?? 0,
+          nit: (ff['nit'] ?? '').toString(),
+          razonSocial: (ff['razon_social'] ?? '').toString(),
+        );
+      }).toList(),
     );
   }
 
