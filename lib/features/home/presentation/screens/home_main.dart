@@ -3,12 +3,12 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/cores.dart';
+import '../../../perfil/presentation/screens/perfil_screen.dart';
 import '../../data/datasources/home_service.dart';
 import 'home_screen.dart';
 import 'categories_screen.dart';
 import 'tickets_screen.dart';
 import 'transactions_screen.dart';
-import 'profile_screen.dart';
 
 class HomeMain extends StatefulWidget {
   const HomeMain({Key? key}) : super(key: key);
@@ -28,7 +28,7 @@ class _HomeMainState extends State<HomeMain> {
     CategoriesScreen(),
     TicketsScreen(),
     TransactionsScreen(),
-    ProfileScreen(),
+    PerfilScaffold(),
   ];
 
   void _onItemTapped(int index) {

@@ -44,7 +44,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   get_it: ^8.0.3
   local_auth: ^2.1.8
-  device_info_plus: ^9.1.2
+  device_info_plus: ^11.5.0
   flutter_dotenv: ^5.2.1
   country_code_picker: ^3.2.0
   flutter_pdfview: ^1.4.0
