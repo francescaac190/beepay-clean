@@ -1,7 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<uses-permission android:name="android.permission.USE_BIOMETRIC" />
-<uses-permission android:name="android.permission.USE_FINGERPRINT" />
-<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+<!-- Permisos -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- (Opcional/legacy) -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Features: van FUERA de <application> -->
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+    <uses-feature android:name="android.hardware.biometrics" android:required="false" />
 
     <application
         android:label="beepay"
@@ -33,8 +39,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <uses-feature android:name="android.hardware.fingerprint" android:required="false"/>
-        <uses-feature android:name="android.hardware.biometrics" android:required="false"/>
 
     </application>
 </manifest>
