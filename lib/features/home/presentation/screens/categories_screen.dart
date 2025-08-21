@@ -28,10 +28,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   ];
 
   void _onCategoryTap(_CategoryData item) {
-    // TODO: navega o ejecuta la acción que quieras
-    // Navigator.pushNamed(context, '/${item.keyName}');
-    // o cualquier callback que uses
-    debugPrint('Tap en categoría: ${item.title}');
+    if (item.keyName == 'travel') {
+      // Navega a la pantalla de Travel
+      Navigator.pushNamed(context, '/travel');
+    } else {
+      // Placeholder para las demás categorías
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Abrir ${item.title} (pendiente)')),
+      );
+    }
   }
 
   @override
@@ -92,7 +97,6 @@ class _CategoryCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            // Borde suave estilo screenshot
             color: (gris7).withOpacity(0.15),
             width: 1,
           ),
@@ -101,7 +105,6 @@ class _CategoryCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              // Icono desde assets
               Container(
                 width: 44,
                 height: 44,

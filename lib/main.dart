@@ -19,6 +19,14 @@ import 'injection_container.dart' as di;
 import 'core/cores.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 
+// ======= IMPORTS AÑADIDOS PARA TRAVEL =======
+import 'package:http/http.dart' as http;
+import 'features/travel/presentation/screens/travel_screen.dart';
+import 'features/travel/presentation/bloc/travel_bloc.dart';
+import 'features/travel/data/datasources/travel_remote_datasource.dart';
+import 'features/travel/data/repositories/travel_repository_impl.dart';
+// ===========================================
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: "assets/.env"); // Cargar variables de entorno
@@ -109,6 +117,25 @@ class MyApp extends StatelessWidget {
           '/recupera': (context) => RecuperaScreen(),
           '/ver_cuenta': (context) => VerCuentaScreen(),
           '/home': (context) => HomeMain(),
+
+          // ======= RUTA AÑADIDA: /travel =======
+          '/travel': (context) {
+            final baseUrl = AppConfig.baseurl; // usa tu AppConfig
+            final token = '';
+
+            final ds = TravelRemoteDataSourceImpl(http.Client());
+            final repo = TravelRepositoryImpl(ds);
+
+            return BlocProvider(
+              create: (_) => TravelBloc(
+                repo: repo,
+                baseUrl: baseUrl,
+                token: token,
+              )..add(TravelLoadAirports()),
+              child: const TravelScreen(),
+            );
+          },
+          // =====================================
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/otp') {
