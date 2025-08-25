@@ -1,106 +1,48 @@
+// lib/features/travel/presentation/bloc/travel_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../travel/domain/entities/airport.dart';
-import '../../../travel/domain/repositories/travel_repository.dart';
 
-// --------- EVENTS ----------
-abstract class TravelEvent {}
+import '../../domain/entities/airport.dart';
+import '../../domain/entities/flight.dart';
+import '../../domain/entities/search_request.dart';
+import '../../domain/repositories/travel_repository.dart';
+import 'travel_event.dart';
+import 'travel_state.dart';
 
-class TravelLoadAirports extends TravelEvent {}
-class TravelSelectOrigin extends TravelEvent { final Airport? origin; TravelSelectOrigin(this.origin); }
-class TravelSelectDestination extends TravelEvent { final Airport? destination; TravelSelectDestination(this.destination); }
-class TravelSwapAirports extends TravelEvent {}
-class TravelSelectTripType extends TravelEvent { final String type; TravelSelectTripType(this.type); } // 'OW' | 'RT'
-class TravelPickOneDate extends TravelEvent { final DateTime date; TravelPickOneDate(this.date); }
-class TravelPickRange extends TravelEvent { final DateTime start; final DateTime end; TravelPickRange(this.start, this.end); }
-class TravelSetPassengers extends TravelEvent { final int adults; final int kids; final int babies; TravelSetPassengers(this.adults, this.kids, this.babies); }
-class TravelSubmit extends TravelEvent {}
-
-// --------- STATE ----------
-class TravelState {
-  final bool loading;
-  final List<Airport> airports;
-  final Airport? origin;
-  final Airport? destination;
-  final String tripType; // 'OW' | 'RT'
-  final DateTime? oneWayDate;
-  final DateTime? rangeStart;
-  final DateTime? rangeEnd;
-  final int adults;
-  final int kids;
-  final int babies;
-  final String? error;
-
-  bool get isValid {
-    if (origin == null || destination == null) return false;
-    if (tripType == 'OW') return oneWayDate != null;
-    return rangeStart != null && rangeEnd != null;
-  }
-
-  const TravelState({
-    this.loading = false,
-    this.airports = const [],
-    this.origin,
-    this.destination,
-    this.tripType = 'RT',
-    this.oneWayDate,
-    this.rangeStart,
-    this.rangeEnd,
-    this.adults = 1,
-    this.kids = 0,
-    this.babies = 0,
-    this.error,
-  });
-
-  TravelState copyWith({
-    bool? loading,
-    List<Airport>? airports,
-    Airport? origin,
-    Airport? destination,
-    String? tripType,
-    DateTime? oneWayDate,
-    DateTime? rangeStart,
-    DateTime? rangeEnd,
-    int? adults,
-    int? kids,
-    int? babies,
-    String? error,
-    bool clearOneWay = false,
-    bool clearRange = false,
-  }) {
-    return TravelState(
-      loading: loading ?? this.loading,
-      airports: airports ?? this.airports,
-      origin: origin,
-      destination: destination,
-      tripType: tripType ?? this.tripType,
-      oneWayDate: clearOneWay ? null : (oneWayDate ?? this.oneWayDate),
-      rangeStart: clearRange ? null : (rangeStart ?? this.rangeStart),
-      rangeEnd: clearRange ? null : (rangeEnd ?? this.rangeEnd),
-      adults: adults ?? this.adults,
-      kids: kids ?? this.kids,
-      babies: babies ?? this.babies,
-      error: error,
-    );
-  }
-}
-
-// --------- BLOC ----------
 class TravelBloc extends Bloc<TravelEvent, TravelState> {
   final TravelRepository repo;
   final String baseUrl;
   final String token;
 
-  TravelBloc({required this.repo, required this.baseUrl, required this.token})
-      : super(const TravelState(loading: true)) {
+  TravelBloc({
+    required this.repo,
+    required this.baseUrl,
+    required this.token,
+  }) : super(const TravelState(loading: true)) {
     on<TravelLoadAirports>(_onLoadAirports);
-    on<TravelSelectOrigin>((e, emit) => emit(state.copyWith(origin: e.origin)));
-    on<TravelSelectDestination>((e, emit) => emit(state.copyWith(destination: e.destination)));
+
+    on<TravelSelectOrigin>((e, emit) {
+      emit(state.copyWith(
+        origin: e.origin,
+        clearOrigin: e.origin == null,
+      ));
+    });
+
+    on<TravelSelectDestination>((e, emit) {
+      emit(state.copyWith(
+        destination: e.destination,
+        clearDestination: e.destination == null,
+      ));
+    });
+
     on<TravelSwapAirports>(_onSwap);
     on<TravelSelectTripType>(_onTripType);
     on<TravelPickOneDate>((e, emit) => emit(state.copyWith(oneWayDate: e.date, clearRange: true)));
     on<TravelPickRange>((e, emit) => emit(state.copyWith(rangeStart: e.start, rangeEnd: e.end, clearOneWay: true)));
     on<TravelSetPassengers>((e, emit) => emit(state.copyWith(adults: e.adults, kids: e.kids, babies: e.babies)));
     on<TravelSubmit>(_onSubmit);
+
+    on<TravelSearchFlights>(_onSearchFlights);
+    on<TravelChangeSort>(_onChangeSort);
   }
 
   Future<void> _onLoadAirports(TravelLoadAirports e, Emitter<TravelState> emit) async {
@@ -114,7 +56,10 @@ class TravelBloc extends Bloc<TravelEvent, TravelState> {
   }
 
   void _onSwap(TravelSwapAirports e, Emitter<TravelState> emit) {
-    emit(state.copyWith(origin: state.destination, destination: state.origin));
+    emit(state.copyWith(
+      origin: state.destination,
+      destination: state.origin,
+    ));
   }
 
   void _onTripType(TravelSelectTripType e, Emitter<TravelState> emit) {
@@ -131,5 +76,74 @@ class TravelBloc extends Bloc<TravelEvent, TravelState> {
     } else {
       emit(state.copyWith(error: null));
     }
+  }
+
+  Future<void> _onSearchFlights(TravelSearchFlights e, Emitter<TravelState> emit) async {
+    if (!state.isValid) {
+      emit(state.copyWith(resultsError: 'Faltan datos para buscar', resultsLoading: false));
+      return;
+    }
+
+    emit(state.copyWith(resultsLoading: true, resultsError: null));
+
+    try {
+      final req = SearchRequest(
+        originIata: state.origin!.iata,
+        destinationIata: state.destination!.iata,
+        tripType: state.tripType,
+        oneWayDate: state.oneWayDate,
+        rangeStart: state.rangeStart,
+        rangeEnd: state.rangeEnd,
+        adults: state.adults,
+        kids: state.kids,
+        babies: state.babies,
+      );
+
+      final list = await repo.searchFlights(
+        baseUrl: baseUrl,
+        token: token,
+        request: req,
+      );
+
+      final sorted = _sort(list, state.sort);
+      emit(state.copyWith(resultsLoading: false, flights: sorted, resultsError: null));
+    } catch (_) {
+      emit(state.copyWith(resultsLoading: false, resultsError: 'Error al obtener vuelos'));
+    }
+  }
+
+  void _onChangeSort(TravelChangeSort e, Emitter<TravelState> emit) {
+    final sorted = _sort(state.flights, e.sort);
+    emit(state.copyWith(sort: e.sort, flights: sorted));
+  }
+
+  List<Flight> _sort(List<Flight> list, TravelSort s) {
+    final flights = List<Flight>.from(list);
+    switch (s) {
+      case TravelSort.priceAsc:
+        flights.sort((a, b) => _toDouble(a.totalAmount).compareTo(_toDouble(b.totalAmount)));
+        break;
+      case TravelSort.cashbackDesc:
+        flights.sort((a, b) => _toDouble(b.puntos).compareTo(_toDouble(a.puntos)));
+        break;
+      case TravelSort.departureEarly:
+        DateTime parseDT(Flight f) {
+          final d = f.ida.first.departureDate; // yyyy-MM-dd
+          final t = f.ida.first.departureTime; // HH:mm
+          // Intentos de parseo tolerantes
+          return DateTime.tryParse('$d $t') ??
+              DateTime.tryParse('${f.ida.first.departureDate}T${f.ida.first.departureTime}:00') ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+        }
+        flights.sort((a, b) => parseDT(a).compareTo(parseDT(b)));
+        break;
+    }
+    return flights;
+  }
+
+  double _toDouble(String v) {
+    final clean = v.replaceAll(RegExp(r'[^0-9\.\,]'), '').replaceAll(',', '.');
+    return double.tryParse(clean) ?? double.infinity;
+    // Nota: si quisieras precio no disponible al final, infinity está bien.
   }
 }

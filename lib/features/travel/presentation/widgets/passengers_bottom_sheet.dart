@@ -1,8 +1,11 @@
+// lib/features/travel/presentation/widgets/passengers_bottom_sheet.dart
 import 'package:flutter/material.dart';
+import '../../../../core/cores.dart'; // contiene los colors y textStyle que compartiste
 
 class PassengersButton extends StatelessWidget {
   final int adults, kids, babies;
   final void Function(int, int, int) onConfirm;
+
   const PassengersButton({
     super.key,
     required this.adults,
@@ -19,7 +22,7 @@ class PassengersButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F2F7),
+          color: background2,
           borderRadius: BorderRadius.circular(28),
         ),
         child: Row(
@@ -36,11 +39,13 @@ class PassengersButton extends StatelessWidget {
     );
   }
 
-  Widget _chip(IconData icon, int v) => Row(children: [
-        Icon(icon, size: 16, color: Colors.grey.shade700),
-        const SizedBox(width: 3),
-        Text('$v', style: const TextStyle(fontWeight: FontWeight.w700)),
-      ]);
+  Widget _chip(IconData icon, int v) => Row(
+        children: [
+          Icon(icon, size: 16, color: gris7),
+          const SizedBox(width: 3),
+          Text('$v', style: bold(blackBeePay, 14)),
+        ],
+      );
 
   void _open(BuildContext context) {
     int a = adults, k = kids, b = babies;
@@ -57,26 +62,44 @@ class PassengersButton extends StatelessWidget {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            void incA() { if (total() < maxTotal) setModalState(() => a++); }
-            void decA() { if (a > 1) setModalState(() => a--); }
-            void incK() { if (total() < maxTotal) setModalState(() => k++); }
-            void decK() { if (k > 0) setModalState(() => k--); }
-            void incB() { if (total() < maxTotal) setModalState(() => b++); }
-            void decB() { if (b > 0) setModalState(() => b--); }
+            void incA() {
+              if (total() < maxTotal) setModalState(() => a++);
+            }
+
+            void decA() {
+              if (a > 1) setModalState(() => a--);
+            }
+
+            void incK() {
+              if (total() < maxTotal) setModalState(() => k++);
+            }
+
+            void decK() {
+              if (k > 0) setModalState(() => k--);
+            }
+
+            void incB() {
+              if (total() < maxTotal) setModalState(() => b++);
+            }
+
+            void decB() {
+              if (b > 0) setModalState(() => b--);
+            }
 
             return Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Pasajeros', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                    child: Text('Pasajeros', style: extraBold(blackBeePay, 20)),
                   ),
                   const SizedBox(height: 6),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Cantidad máxima de pasajeros: 9', style: TextStyle(color: Colors.black54)),
+                    child: Text('Cantidad máxima de pasajeros: 9',
+                        style: regular(gris6, 13)),
                   ),
                   const SizedBox(height: 16),
 
@@ -114,15 +137,17 @@ class PassengersButton extends StatelessWidget {
                     height: 46,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: amber,
+                        foregroundColor: blanco,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () {
                         Navigator.pop(context);
                         onConfirm(a, k, b);
                       },
-                      child: const Text('Aplicar', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: Text('Aplicar', style: semibold(blanco, 16)),
                     ),
                   ),
                 ],
@@ -143,20 +168,20 @@ class PassengersButton extends StatelessWidget {
     required VoidCallback onDec,
     required VoidCallback onInc,
   }) {
-    Color cDec = canDec ? Colors.black54 : Colors.black26;
-    Color cInc = canInc ? Colors.amber : Colors.black26;
+    final Color cDec = canDec ? gris7 : gris3;
+    final Color cInc = canInc ? amber : gris3;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey.shade700),
+          Icon(icon, color: gris7),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+          Expanded(child: Text(label, style: semibold(blackBeePay, 16))),
           _circleIcon(Icons.remove_circle_outline, cDec, canDec ? onDec : null),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text('$value', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            child: Text('$value', style: bold(blackBeePay, 16)),
           ),
           _circleIcon(Icons.add_circle_outline, cInc, canInc ? onInc : null),
         ],

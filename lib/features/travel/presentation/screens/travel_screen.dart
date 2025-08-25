@@ -2,9 +2,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/cores.dart'; // colores y textStyles
 import '../../domain/entities/airport.dart';
 import '../bloc/travel_bloc.dart';
+import '../bloc/travel_event.dart';
+import '../bloc/travel_state.dart';
 import '../widgets/passengers_bottom_sheet.dart';
+import '../../../resultados/presentation/screens/resultados_screen.dart';
 
 class TravelScreen extends StatefulWidget {
   const TravelScreen({super.key});
@@ -12,19 +17,21 @@ class TravelScreen extends StatefulWidget {
   State<TravelScreen> createState() => _TravelScreenState();
 }
 
-class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMixin {
+class _TravelScreenState extends State<TravelScreen>
+    with TickerProviderStateMixin {
   late final AnimationController _swapCtrl;
   late final Animation<double> _swapAnim;
 
   final _originCtrl = TextEditingController();
-  final _destCtrl   = TextEditingController();
+  final _destCtrl = TextEditingController();
   final _originFocus = FocusNode();
-  final _destFocus   = FocusNode();
+  final _destFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _swapCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    _swapCtrl =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _swapAnim = Tween(begin: 0.0, end: pi).animate(_swapCtrl);
   }
 
@@ -49,34 +56,37 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFF6F7FB);
-
     Widget body(Widget child) => GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: child,
-    );
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: child,
+        );
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: background2,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: blanco,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
         ),
         centerTitle: true,
-        title: Image.asset('assets/iconos/Bee-pay-big.png', height: 28, fit: BoxFit.contain),
+        title: Image.asset('assets/iconos/Bee-pay-big.png',
+            height: 28, fit: BoxFit.contain),
       ),
       body: body(
         BlocConsumer<TravelBloc, TravelState>(
-          listenWhen: (p, c) => p.origin != c.origin || p.destination != c.destination || p.error != c.error,
+          listenWhen: (p, c) =>
+              p.origin != c.origin ||
+              p.destination != c.destination ||
+              p.error != c.error,
           listener: (context, s) {
             _originCtrl.text = s.origin?.concatenacion ?? '';
-            _destCtrl.text   = s.destination?.concatenacion ?? '';
+            _destCtrl.text = s.destination?.concatenacion ?? '';
             if (s.error != null) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.error!)));
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(s.error!)));
             }
           },
           builder: (context, s) {
@@ -91,28 +101,19 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                       Text(
                         '¿A DÓNDE QUERÉS VIAJAR?',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          height: 1.2,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.grey.shade700,
-                        ),
+                        style: black(gris7, 22),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Seleccioná los detalles de tu vuelo',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: semibold(gris6, 14),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         height: 3,
                         width: 120,
                         decoration: BoxDecoration(
-                          color: Colors.amber,
+                          color: amber,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -121,17 +122,19 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                 ),
                 const SizedBox(height: 14),
 
-                // Card Origen/Destino con alineación exacta
+                // Card Origen/Destino
                 Card(
-                  color: Colors.white,
-                  surfaceTintColor: Colors.white,
+                  color: blanco,
+                  surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        // Fila 1: Avión despegue + Origen
+                        // Origen
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -145,18 +148,23 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 options: s.airports,
                                 onSelected: (ap) {
                                   FocusScope.of(context).unfocus();
-                                  context.read<TravelBloc>().add(TravelSelectOrigin(ap));
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectOrigin(ap));
                                 },
                                 onClear: () {
-                                  context.read<TravelBloc>().add(TravelSelectOrigin(null));
-                                  _originCtrl.value = _originCtrl.value.copyWith(text: '');
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectOrigin(null));
+                                  _originCtrl.value =
+                                      _originCtrl.value.copyWith(text: '');
                                 },
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
-                        // Fila 2: Línea punteada + flechas swap
+                        // Swap
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -175,9 +183,11 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                         angle: _swapAnim.value,
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
-                                          children: const [
-                                            Icon(Icons.arrow_downward_outlined, color: Colors.amber, size: 18),
-                                            Icon(Icons.arrow_upward_outlined,  color: Colors.amber, size: 18),
+                                          children: [
+                                            Icon(Icons.arrow_downward_outlined,
+                                                color: amber, size: 18),
+                                            Icon(Icons.arrow_upward_outlined,
+                                                color: amber, size: 18),
                                           ],
                                         ),
                                       ),
@@ -189,7 +199,7 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                           ],
                         ),
                         const SizedBox(height: 6),
-                        // Fila 3: Avión aterrizaje + Destino
+                        // Destino
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -203,11 +213,16 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 options: s.airports,
                                 onSelected: (ap) {
                                   FocusScope.of(context).unfocus();
-                                  context.read<TravelBloc>().add(TravelSelectDestination(ap));
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectDestination(ap));
                                 },
                                 onClear: () {
-                                  context.read<TravelBloc>().add(TravelSelectDestination(null));
-                                  _destCtrl.value = _destCtrl.value.copyWith(text: '');
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectDestination(null));
+                                  _destCtrl.value =
+                                      _destCtrl.value.copyWith(text: '');
                                 },
                               ),
                             ),
@@ -216,7 +231,7 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
 
                         const SizedBox(height: 12),
 
-                        // Fila chips: Ida y vuelta / Pasajeros
+                        // Chips: tipo de viaje / pasajeros
                         Row(
                           children: [
                             Expanded(
@@ -224,7 +239,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 value: s.tripType == 'OW' ? 'Ida' : 'Ida y vuelta',
                                 onChanged: (v) => context
                                     .read<TravelBloc>()
-                                    .add(TravelSelectTripType(v == 'Ida' ? 'OW' : 'RT')),
+                                    .add(TravelSelectTripType(
+                                        v == 'Ida' ? 'OW' : 'RT')),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -233,8 +249,9 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 adults: s.adults,
                                 kids: s.kids,
                                 babies: s.babies,
-                                onConfirm: (a, k, b) =>
-                                    context.read<TravelBloc>().add(TravelSetPassengers(a, k, b)),
+                                onConfirm: (a, k, b) => context
+                                    .read<TravelBloc>()
+                                    .add(TravelSetPassengers(a, k, b)),
                               ),
                             ),
                           ],
@@ -246,19 +263,20 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
 
                 const SizedBox(height: 18),
 
-                const Center(
-                  child: Text(
-                    'Seleccioná tus fechas:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                  ),
+                Center(
+                  child: Text('Seleccioná tus fechas:',
+                      style: extraBold(blackBeePay, 16)),
                 ),
                 const SizedBox(height: 12),
 
-                Card(
-                  color: Colors.white,
-                  surfaceTintColor: Colors.white,
+                Card
+                (
+                  color: blanco,
+                  surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: s.tripType == 'OW'
@@ -267,24 +285,28 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                             onPick: () async {
                               final picked = await showDatePicker(
                                 context: context,
-                                initialEntryMode: DatePickerEntryMode.calendarOnly,
+                                initialEntryMode:
+                                    DatePickerEntryMode.calendarOnly,
                                 initialDate: s.oneWayDate ?? DateTime.now(),
                                 firstDate: DateTime.now(),
                                 lastDate: DateTime(2100),
                                 builder: (context, child) => Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                      primary: Colors.amber,
-                                      onPrimary: Colors.white,
-                                      surface: Colors.white,
-                                      onSurface: Colors.black87,
-                                    ),
+                                    colorScheme:
+                                        Theme.of(context).colorScheme.copyWith(
+                                              primary: amber,
+                                              onPrimary: blanco,
+                                              surface: blanco,
+                                              onSurface: blackBeePay,
+                                            ),
                                   ),
                                   child: child!,
                                 ),
                               );
                               if (picked != null) {
-                                context.read<TravelBloc>().add(TravelPickOneDate(picked));
+                                context
+                                    .read<TravelBloc>()
+                                    .add(TravelPickOneDate(picked));
                               }
                             },
                           )
@@ -295,23 +317,27 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                               final now = DateTime.now();
                               final range = await showDateRangePicker(
                                 context: context,
-                                initialEntryMode: DatePickerEntryMode.calendarOnly,
+                                initialEntryMode:
+                                    DatePickerEntryMode.calendarOnly,
                                 firstDate: now,
                                 lastDate: DateTime(2100),
                                 builder: (context, child) => Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                      primary: Colors.amber,
-                                      onPrimary: Colors.white,
-                                      surface: Colors.white,
-                                      onSurface: Colors.black87,
-                                    ),
+                                    colorScheme:
+                                        Theme.of(context).colorScheme.copyWith(
+                                              primary: amber,
+                                              onPrimary: blanco,
+                                              surface: blanco,
+                                              onSurface: blackBeePay,
+                                            ),
                                   ),
                                   child: child!,
                                 ),
                               );
                               if (range != null) {
-                                context.read<TravelBloc>().add(TravelPickRange(range.start, range.end));
+                                context.read<TravelBloc>().add(
+                                      TravelPickRange(range.start, range.end),
+                                    );
                               }
                             },
                           ),
@@ -324,17 +350,29 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                   height: 52,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: amber,
+                      foregroundColor: blanco,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
-                      context.read<TravelBloc>().add(TravelSubmit());
-                      if (context.read<TravelBloc>().state.isValid) {
-                        Navigator.pushNamed(context, '/resultados');
+                      final bloc = context.read<TravelBloc>();
+                      bloc.add(TravelSubmit());
+                      if (bloc.state.isValid) {
+                        // 🔹 Disparar la búsqueda y navegar compartiendo el MISMO bloc
+                        bloc.add(TravelSearchFlights());
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: bloc,
+                              child: const ResultadosScreen(),
+                            ),
+                          ),
+                        );
                       }
                     },
-                    child: const Text('Buscar vuelos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    child: Text('Buscar vuelos', style: semibold(blanco, 18)),
                   ),
                 ),
               ],
@@ -346,7 +384,7 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
   }
 }
 
-/// Celda lateral con el avión centrado verticalmente en cada fila
+/// Celda lateral con el avión
 class _RailCell extends StatelessWidget {
   final IconData icon;
   const _RailCell({required this.icon});
@@ -356,17 +394,13 @@ class _RailCell extends StatelessWidget {
     return SizedBox(
       width: 34,
       child: Center(
-        child: Icon(
-          icon,                 // ← usa el ícono recibido
-          color: Colors.amber,
-          size: 24,
-        ),
+        child: Icon(icon, color: amber, size: 24),
       ),
     );
   }
 }
 
-/// Línea punteada vertical con altura controlada para quedar entre los campos
+/// Línea punteada vertical
 class _RailDash extends StatelessWidget {
   final double height;
   const _RailDash({this.height = 30});
@@ -377,8 +411,8 @@ class _RailDash extends StatelessWidget {
       height: height,
       child: LayoutBuilder(
         builder: (context, c) {
-          final dashH = 8.0;
-          final gap = 6.0;
+          const dashH = 8.0;
+          const gap = 6.0;
           final n = (c.maxHeight / (dashH + gap)).floor().clamp(1, 10);
           return Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -386,7 +420,10 @@ class _RailDash extends StatelessWidget {
               return Container(
                 width: 4,
                 height: dashH,
-                decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: amber,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               );
             }),
           );
@@ -406,14 +443,24 @@ class _TripTypeDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(color: const Color(0xFFF0F2F7), borderRadius: BorderRadius.circular(30)),
+      decoration: BoxDecoration(
+        color: background2,
+        borderRadius: BorderRadius.circular(30),
+      ),
       child: DropdownButton<String>(
         value: value,
         isExpanded: true,
         underline: const SizedBox.shrink(),
-        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black54),
-        items: opciones.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-        onChanged: (v) { if (v != null) onChanged(v); },
+        icon: Icon(Icons.keyboard_arrow_down_rounded, color: gris6),
+        items: opciones
+            .map((v) => DropdownMenuItem(
+                  value: v,
+                  child: Text(v, style: semibold(gris7, 14)),
+                ))
+            .toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
       ),
     );
   }
@@ -425,15 +472,20 @@ class _OneDate extends StatelessWidget {
   const _OneDate({required this.date, required this.onPick});
   @override
   Widget build(BuildContext context) {
-    final label = date == null ? 'Fecha de Ida' : '${date!.day}/${date!.month}/${date!.year}';
+    final label = date == null
+        ? 'Fecha de Ida'
+        : '${date!.day}/${date!.month}/${date!.year}';
     return InkWell(
       onTap: onPick,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         height: 64,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: const Color(0xFFF0F2F7), borderRadius: BorderRadius.circular(12)),
-        child: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        decoration: BoxDecoration(
+          color: background2,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(label, style: semibold(blackBeePay, 15)),
       ),
     );
   }
@@ -446,21 +498,27 @@ class _RangeDate extends StatelessWidget {
   const _RangeDate({required this.start, required this.end, required this.onPick});
   @override
   Widget build(BuildContext context) {
-    final ida    = start == null ? 'Fecha de Ida'    : '${start!.day}/${start!.month}/${start!.year}';
-    final vuelta = end   == null ? 'Fecha de Vuelta' : '${end!.day}/${end!.month}/${end!.year}';
+    final ida =
+        start == null ? 'Fecha de Ida' : '${start!.day}/${start!.month}/${start!.year}';
+    final vuelta = end == null
+        ? 'Fecha de Vuelta'
+        : '${end!.day}/${end!.month}/${end!.year}';
     return InkWell(
       onTap: onPick,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         height: 64,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: const Color(0xFFF0F2F7), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: background2,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Text(ida, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const Text('-', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text(vuelta, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(ida, style: semibold(blackBeePay, 15)),
+            Text('-', style: semibold(blackBeePay, 15)),
+            Text(vuelta, style: semibold(blackBeePay, 15)),
           ],
         ),
       ),
@@ -468,7 +526,7 @@ class _RangeDate extends StatelessWidget {
   }
 }
 
-/// Autocomplete (campos transparentes, lista completa de aeropuertos)
+/// Autocomplete (lista completa de aeropuertos y ABRE AL INSTANTE)
 class _AirportAutocomplete extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -492,6 +550,18 @@ class _AirportAutocomplete extends StatelessWidget {
     return options.where((a) => a.concatenacion.toLowerCase().contains(query));
   }
 
+  // Fuerza a que RawAutocomplete “abra” de inmediato
+  void _forceOpenNow(TextEditingController c) {
+    final txt = c.text;
+    // Mutación mínima: agrega un espacio y lo quita en microtask
+    c.text = '$txt ';
+    c.selection = TextSelection.collapsed(offset: c.text.length);
+    Future.microtask(() {
+      c.text = txt;
+      c.selection = TextSelection.collapsed(offset: c.text.length);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return RawAutocomplete<Airport>(
@@ -504,30 +574,36 @@ class _AirportAutocomplete extends StatelessWidget {
         return Focus(
           onFocusChange: (hasFocus) {
             if (hasFocus) {
-              textController.value = textController.value.copyWith(text: textController.text);
+              _forceOpenNow(textController); // 💥 abre al instante al enfocar
             }
           },
           child: TextField(
             controller: textController,
             focusNode: fn,
             onTap: () {
-              textController.value = textController.value.copyWith(text: textController.text);
+              _forceOpenNow(textController); // 💥 abre al instante al tocar
             },
             decoration: InputDecoration(
               hintText: label,
-              hintStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w700),
-              filled: false, // transparente
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              hintStyle: semibold(gris6, 14),
+              filled: false,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.close, size: 18, color: Colors.black38),
+                icon: Icon(Icons.close, size: 18, color: gris5),
                 onPressed: () {
                   controller.clear();
                   onClear();
-                  textController.value = textController.value.copyWith(text: '');
+                  // abrir lista con todos de nuevo
+                  _forceOpenNow(textController);
                 },
               ),
             ),
+            style: semibold(blackBeePay, 15),
           ),
         );
       },
@@ -551,16 +627,16 @@ class _AirportAutocomplete extends StatelessWidget {
                 itemBuilder: (_, i) {
                   final ap = opts.elementAt(i);
                   return ListTile(
-                    leading: const Icon(Icons.flight, color: Colors.black87),
+                    leading: Icon(Icons.flight, color: blackBeePay),
                     title: Text(
                       '${ap.iata.toUpperCase()}, ${ap.name}',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: extraBold(blackBeePay, 14),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
                       ap.concatenacion,
-                      style: const TextStyle(color: Colors.black54),
+                      style: regular(gris6, 13),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
