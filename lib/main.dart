@@ -1,8 +1,8 @@
-// lib/main.dart
 import 'package:beepay/core/config/app_config.dart';
 import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:beepay/features/resetpw/presentation/bloc/recupera_bloc.dart';
-import 'package:beepay/features/resultados/presentation/screens/resultados_screen.dart' show ResultadosScreen;
+import 'package:beepay/features/resultados/presentation/screens/resultados_screen.dart'
+    show ResultadosScreen;
 import 'package:beepay/injection_container.dart';
 import 'package:beepay/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +29,7 @@ import 'features/travel/presentation/bloc/travel_bloc.dart';
 import 'features/travel/presentation/bloc/travel_event.dart';
 import 'features/travel/data/datasources/travel_remote_datasource.dart';
 import 'features/travel/data/repositories/travel_repository_impl.dart';
+import 'features/travel/presentation/screens/info_reserva.dart';
 // ==============================
 
 // ======= TOKEN (Secure Storage) =======
@@ -37,7 +38,7 @@ import 'core/config/secure_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: "assets/.env"); // Cargar variables de entorno
+  await dotenv.load(fileName: "assets/.env");
   init();
   await checkBiometricSupport();
 
@@ -122,9 +123,10 @@ class MyApp extends StatelessWidget {
           '/recupera': (context) => RecuperaScreen(),
           '/ver_cuenta': (context) => VerCuentaScreen(),
           '/home': (context) => HomeMain(),
-          // /travel la dejamos como antes, usando un loader que arma el Bloc
+
+          // /travel usa un loader que arma el Bloc
           '/travel': (context) => const TravelRoute(),
-          // 👇 OJO: NO declaramos '/resultados' aquí para poder inyectar el bloc por onGenerateRoute
+          // ⚠️ '/resultados' y '/info_reserva' van por onGenerateRoute para reusar el Bloc
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/otp') {
@@ -152,21 +154,47 @@ class MyApp extends StatelessWidget {
               ),
             );
           } else if (settings.name == '/resultados') {
-            // ⬅️ Recuperamos el bloc desde los argumentos y lo reutilizamos
+            // 1) Intentamos recuperar el bloc por argumentos
             final argBloc = settings.arguments as TravelBloc?;
+
             return MaterialPageRoute(
               builder: (context) {
-                if (argBloc == null) {
-                  // Si no vino el bloc, mostramos un mensaje claro
+                // 2) Si no vino, intentamos tomar el que ya exista en el contexto
+                final fallback = argBloc ?? _tryGetTravelBloc(context);
+
+                if (fallback == null) {
                   return const Scaffold(
                     body: Center(
                       child: Text('Falta TravelBloc al navegar a /resultados'),
                     ),
                   );
                 }
+
                 return BlocProvider.value(
-                  value: argBloc,
+                  value: fallback,
                   child: const ResultadosScreen(),
+                );
+              },
+            );
+          } else if (settings.name == '/info_reserva') {
+            // Mismo patrón para InfoReserva
+            final argBloc = settings.arguments as TravelBloc?;
+
+            return MaterialPageRoute(
+              builder: (context) {
+                final fallback = argBloc ?? _tryGetTravelBloc(context);
+
+                if (fallback == null) {
+                  return const Scaffold(
+                    body: Center(
+                      child: Text('Falta TravelBloc al navegar a /info_reserva'),
+                    ),
+                  );
+                }
+
+                return BlocProvider.value(
+                  value: fallback,
+                  child: const InfoReservaScreen(),
                 );
               },
             );
@@ -175,6 +203,15 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Helper seguro para obtener el TravelBloc si está en el árbol
+TravelBloc? _tryGetTravelBloc(BuildContext context) {
+  try {
+    return BlocProvider.of<TravelBloc>(context);
+  } catch (_) {
+    return null;
   }
 }
 

@@ -23,7 +23,7 @@ class ResultadosScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
         ),
         centerTitle: true,
         title: Text('Resultados', style: extraBold(blackBeePay, 18)),
@@ -90,7 +90,7 @@ class ResultadosScreen extends StatelessWidget {
                     child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        color: amber, // usa tu color de marca
+                        color: amber,
                       ),
                     ),
                   ),
@@ -114,15 +114,15 @@ class ResultadosScreen extends StatelessWidget {
                   surfaceTintColor: blanco,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: SizedBox(
+                  child: const SizedBox(
                     height: 140,
                     child: Center(
-                      child: Text('No se encontraron vuelos', style: semibold(gris7, 14)),
+                      child: Text('No se encontraron vuelos'),
                     ),
                   ),
                 ),
               ] else ...[
-                // LISTA DE VUELOS
+                // LISTA DE VUELOS (tap -> navega a InfoReserva)
                 ...s.flights.map((f) => _FlightCard(f)).toList(),
               ],
             ],
@@ -186,91 +186,103 @@ class _FlightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ida = f.ida;
-
     final vuelta = f.vuelta;
+
     final vueltaTitle = vuelta == null
         ? null
         : 'Vuelta: ${vuelta.first.departureDateOfWeekName}, '
-          '${_dd(vuelta.first.departureDate)} de ${vuelta.first.mesDeparture} de ${vuelta.first.departureDate.substring(0, 4)}';
+            '${_dd(vuelta.first.departureDate)} de ${vuelta.first.mesDeparture} de ${vuelta.first.departureDate.substring(0, 4)}';
 
     final idaTitle = 'Ida: ${ida.first.departureDateOfWeekName}, '
         '${_dd(ida.first.departureDate)} de ${ida.first.mesDeparture} de ${ida.first.departureDate.substring(0, 4)}';
 
-    return Card(
-      color: blanco,
-      surfaceTintColor: blanco,
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 12),
-        child: Column(
-          children: [
-            _legHeader(ida.first.logoCarrier, idaTitle),
-            _legRow(
-              horaSalida: ida.first.departureTime,
-              aeSalida: ida.first.departureAirport,
-              ciudadSalida: ida.first.departureCiudad,
-              conexiones: max(ida.last.leg - 1, 0),
-              vuelo: 'Vuelo ${ida.first.flightNumber}',
-              horaLlegada: ida.last.arrivalTime,
-              aeLlegada: ida.last.arrivalAirport,
-              ciudadLlegada: ida.last.arrivalCiudad,
-            ),
-            _equipajeNote(ida.last.equipaje),
+    return InkWell(
+      onTap: () {
+        // guardamos el vuelo seleccionado en el bloc
+        context.read<TravelBloc>().add(TravelSelectFlight(f));
 
-            if (vuelta != null) ...[
-              const SizedBox(height: 12),
-              _legHeader(vuelta.first.logoCarrier, vueltaTitle!),
+        // pasamos el bloc explícitamente como argumento
+        Navigator.pushNamed(
+          context,
+          '/info_reserva',
+          arguments: context.read<TravelBloc>(),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        color: blanco,
+        surfaceTintColor: blanco,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 12),
+          child: Column(
+            children: [
+              _legHeader(ida.first.logoCarrier, idaTitle),
               _legRow(
-                horaSalida: vuelta.first.departureTime,
-                aeSalida: vuelta.first.departureAirport,
-                ciudadSalida: vuelta.first.departureCiudad,
-                conexiones: max(vuelta.last.leg - 1, 0),
-                vuelo: 'Vuelo ${vuelta.first.flightNumber}',
-                horaLlegada: vuelta.last.arrivalTime,
-                aeLlegada: vuelta.last.arrivalAirport,
-                ciudadLlegada: vuelta.last.arrivalCiudad,
+                horaSalida: ida.first.departureTime,
+                aeSalida: ida.first.departureAirport,
+                ciudadSalida: ida.first.departureCiudad,
+                conexiones: max(ida.last.leg - 1, 0),
+                vuelo: 'Vuelo ${ida.first.flightNumber}',
+                horaLlegada: ida.last.arrivalTime,
+                aeLlegada: ida.last.arrivalAirport,
+                ciudadLlegada: ida.last.arrivalCiudad,
               ),
-              _equipajeNote(vuelta.last.equipaje),
+              _equipajeNote(ida.last.equipaje),
+              if (vuelta != null) ...[
+                const SizedBox(height: 12),
+                _legHeader(vuelta.first.logoCarrier, vueltaTitle!),
+                _legRow(
+                  horaSalida: vuelta.first.departureTime,
+                  aeSalida: vuelta.first.departureAirport,
+                  ciudadSalida: vuelta.first.departureCiudad,
+                  conexiones: max(vuelta.last.leg - 1, 0),
+                  vuelo: 'Vuelo ${vuelta.first.flightNumber}',
+                  horaLlegada: vuelta.last.arrivalTime,
+                  aeLlegada: vuelta.last.arrivalAirport,
+                  ciudadLlegada: vuelta.last.arrivalCiudad,
+                ),
+                _equipajeNote(vuelta.last.equipaje),
+              ],
+              const Divider(height: 18, color: gris1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('TOTAL', style: black(gris7, 18)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${f.totalCurrency}. ${f.totalAmountFee}',
+                          style: extraBold(blackBeePay, 18),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(width: 1.2, color: amber),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.local_fire_department, size: 16, color: amber),
+                              const SizedBox(width: 6),
+                              Text('Desde ${f.puntos} BeePuntos', style: semibold(amber, 13)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
-
-            const Divider(height: 18, color: gris1),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('TOTAL', style: black(gris7, 18)),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${f.totalCurrency}. ${f.totalAmountFee}',
-                        style: extraBold(blackBeePay, 18),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(width: 1.2, color: amber),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.local_fire_department, size: 16, color: amber),
-                            const SizedBox(width: 6),
-                            Text('Desde ${f.puntos} BeePuntos', style: semibold(amber, 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -364,7 +376,6 @@ class _FlightCard extends StatelessWidget {
     );
   }
 
-  // Utilidad de formato "dd" desde "yyyy-MM-dd"
   String _dd(String ymd) {
     try {
       final d = DateTime.parse(ymd);

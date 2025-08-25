@@ -1,16 +1,16 @@
-// lib/features/travel/presentation/bloc/travel_state.dart
 import '../../domain/entities/airport.dart';
 import '../../domain/entities/flight.dart';
-import 'travel_event.dart';
 
+enum TravelSort { priceAsc, cashbackDesc, departureEarly }
+
+// --------- STATE ----------
 class TravelState {
-  final bool loading;                 // carga de aeropuertos
+  final bool loading;
   final List<Airport> airports;
-
   final Airport? origin;
   final Airport? destination;
 
-  final String tripType;              // 'OW' | 'RT'
+  final String tripType; // 'OW' | 'RT'
   final DateTime? oneWayDate;
   final DateTime? rangeStart;
   final DateTime? rangeEnd;
@@ -19,13 +19,18 @@ class TravelState {
   final int kids;
   final int babies;
 
-  final String? error;                // errores de formulario
+  final String? error;
 
-  // ---- Resultados Vuelos ----
+  // resultados
   final bool resultsLoading;
-  final List<Flight> flights;
   final String? resultsError;
+  final List<Flight> flights;
+
+  // orden
   final TravelSort sort;
+
+  // vuelo seleccionado
+  final Flight? selectedFlight;
 
   bool get isValid {
     if (origin == null || destination == null) return false;
@@ -48,19 +53,19 @@ class TravelState {
     this.error,
 
     this.resultsLoading = false,
-    this.flights = const [],
     this.resultsError,
+    this.flights = const [],
+
     this.sort = TravelSort.priceAsc,
+
+    this.selectedFlight,
   });
 
   TravelState copyWith({
     bool? loading,
     List<Airport>? airports,
-
-    // Para setear/limpiar explícitamente, usá clearOrigin/clearDestination
     Airport? origin,
     Airport? destination,
-
     String? tripType,
     DateTime? oneWayDate,
     DateTime? rangeStart,
@@ -68,16 +73,20 @@ class TravelState {
     int? adults,
     int? kids,
     int? babies,
-
     String? error,
 
     bool? resultsLoading,
-    List<Flight>? flights,
     String? resultsError,
+    List<Flight>? flights,
+
     TravelSort? sort,
 
+    Flight? selectedFlight,
+
+    // flags para limpiar
     bool clearOneWay = false,
     bool clearRange = false,
+    bool clearError = false,
     bool clearOrigin = false,
     bool clearDestination = false,
   }) {
@@ -89,7 +98,6 @@ class TravelState {
       destination: clearDestination ? null : (destination ?? this.destination),
 
       tripType: tripType ?? this.tripType,
-
       oneWayDate: clearOneWay ? null : (oneWayDate ?? this.oneWayDate),
       rangeStart: clearRange ? null : (rangeStart ?? this.rangeStart),
       rangeEnd: clearRange ? null : (rangeEnd ?? this.rangeEnd),
@@ -98,12 +106,15 @@ class TravelState {
       kids: kids ?? this.kids,
       babies: babies ?? this.babies,
 
-      error: error,
+      error: clearError ? null : (error ?? this.error),
 
       resultsLoading: resultsLoading ?? this.resultsLoading,
-      flights: flights ?? this.flights,
       resultsError: resultsError,
+      flights: flights ?? this.flights,
+
       sort: sort ?? this.sort,
+
+      selectedFlight: selectedFlight ?? this.selectedFlight,
     );
   }
 }

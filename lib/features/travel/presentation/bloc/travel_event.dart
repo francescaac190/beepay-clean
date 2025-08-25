@@ -1,10 +1,9 @@
-// lib/features/travel/presentation/bloc/travel_event.dart
+import 'package:beepay/features/travel/presentation/bloc/travel_state.dart' show TravelSort;
+
 import '../../domain/entities/airport.dart';
+import '../../domain/entities/flight.dart';
 
-/// Orden disponible en resultados
-enum TravelSort { priceAsc, cashbackDesc, departureEarly }
-
-/// Eventos del BLoC de Travel
+// --------- EVENTS ----------
 abstract class TravelEvent {}
 
 class TravelLoadAirports extends TravelEvent {}
@@ -21,9 +20,8 @@ class TravelSelectDestination extends TravelEvent {
 
 class TravelSwapAirports extends TravelEvent {}
 
-/// 'OW' | 'RT'
 class TravelSelectTripType extends TravelEvent {
-  final String type;
+  final String type; // 'OW' | 'RT'
   TravelSelectTripType(this.type);
 }
 
@@ -45,14 +43,19 @@ class TravelSetPassengers extends TravelEvent {
   TravelSetPassengers(this.adults, this.kids, this.babies);
 }
 
-/// Valida el formulario
 class TravelSubmit extends TravelEvent {}
 
-/// Dispara la búsqueda de vuelos con los datos del estado
+/// Lanzar búsqueda de vuelos (si querés separarlo explícitamente del Submit)
 class TravelSearchFlights extends TravelEvent {}
 
-/// Cambia el orden de los vuelos y resortear
+/// Cambio de orden de resultados
 class TravelChangeSort extends TravelEvent {
   final TravelSort sort;
   TravelChangeSort(this.sort);
+}
+
+/// Seleccionar un vuelo para ver/continuar
+class TravelSelectFlight extends TravelEvent {
+  final Flight flight;
+  TravelSelectFlight(this.flight);
 }
