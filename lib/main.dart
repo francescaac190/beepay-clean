@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:beepay/core/config/app_config.dart';
 import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:beepay/features/resetpw/presentation/bloc/recupera_bloc.dart';
@@ -35,6 +36,11 @@ import 'features/travel/presentation/screens/info_reserva.dart';
 // ======= TOKEN (Secure Storage) =======
 import 'core/config/secure_storage_service.dart';
 // ======================================
+
+// ======= PASAJEROS =======
+import 'features/travel/presentation/screens/pasajeros_list_screen.dart';
+import 'features/travel/presentation/screens/agregar_pasajeros_screen.dart';
+// ========================
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -118,15 +124,24 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: SplashScreen(),
         routes: {
-          '/login': (context) => LoginStructure(),
+          // Auth / Home
+          '/login': (context) => const LoginStructure(),
           '/register': (context) => RegisterScreen(),
           '/recupera': (context) => RecuperaScreen(),
           '/ver_cuenta': (context) => VerCuentaScreen(),
-          '/home': (context) => HomeMain(),
+          '/home': (context) => const HomeMain(),
 
-          // /travel usa un loader que arma el Bloc
+          // Alias usado por pantallas de pasajeros ante 401
+          '/h': (context) => const HomeMain(),
+
+          // Travel
           '/travel': (context) => const TravelRoute(),
-          // ⚠️ '/resultados' y '/info_reserva' van por onGenerateRoute para reusar el Bloc
+
+          // Pasajeros
+          '/pasajeros': (context) => const PasajerosListScreen(),
+          '/pasajeros/agregar': (context) => const AgregarPasajerosScreen(),
+          // alias legacy si algo aún usa este path
+          '/listapasajeros': (context) => const PasajerosListScreen(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/otp') {

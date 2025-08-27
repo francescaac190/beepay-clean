@@ -9,31 +9,36 @@ import '../../domain/entities/flight.dart';
 import '../bloc/travel_bloc.dart';
 import '../bloc/travel_state.dart';
 
-/// ------------ CUBIT PARA EL FORM -------------
+/// ------------ STATE del formulario + pasajeros -------------
 class InfoReservaState {
   final String? razonSocial;
   final String? nit;
   final String? email;
   final PhoneNumber phone;
+  final List<Map<String, dynamic>> pasajeros; // ← seleccionados
 
   InfoReservaState({
     this.razonSocial,
     this.nit,
     this.email,
     PhoneNumber? phone,
-  }) : phone = phone ?? PhoneNumber(isoCode: 'BO'); // +591 por defecto
+    List<Map<String, dynamic>>? pasajeros,
+  })  : phone = phone ?? PhoneNumber(isoCode: 'BO'), // +591 por defecto
+        pasajeros = pasajeros ?? const [];
 
   InfoReservaState copyWith({
     String? razonSocial,
     String? nit,
     String? email,
     PhoneNumber? phone,
+    List<Map<String, dynamic>>? pasajeros,
   }) {
     return InfoReservaState(
       razonSocial: razonSocial ?? this.razonSocial,
       nit: nit ?? this.nit,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      pasajeros: pasajeros ?? this.pasajeros,
     );
   }
 }
@@ -45,6 +50,16 @@ class InfoReservaCubit extends Cubit<InfoReservaState> {
   void setNit(String v) => emit(state.copyWith(nit: v));
   void setEmail(String v) => emit(state.copyWith(email: v));
   void setPhone(PhoneNumber v) => emit(state.copyWith(phone: v));
+
+  void addPassenger(Map<String, dynamic> p) {
+    final updated = List<Map<String, dynamic>>.from(state.pasajeros)..add(p);
+    emit(state.copyWith(pasajeros: updated));
+  }
+
+  void removePassengerAt(int i) {
+    final updated = List<Map<String, dynamic>>.from(state.pasajeros)..removeAt(i);
+    emit(state.copyWith(pasajeros: updated));
+  }
 }
 
 /// ------------ PANTALLA -------------
@@ -88,13 +103,13 @@ class InfoReservaScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(15, 10, 15, 24),
               children: [
-                // Título principal (igual a tus screens)
+                // Título principal
                 Padding(
                   padding: const EdgeInsets.fromLTRB(5, 8, 5, 10),
                   child: Text('Reserva', style: bold(blackBeePay, 20)),
                 ),
 
-                // Resumen búsqueda (tarjeta con sombra suave)
+                // Resumen búsqueda
                 _ReCard(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -119,7 +134,7 @@ class InfoReservaScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // VUELO DE IDA (idéntico en jerarquía visual)
+                // VUELO DE IDA
                 _ReCard(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
@@ -163,7 +178,7 @@ class InfoReservaScreen extends StatelessWidget {
                   child: Text('Pasajeros', style: bold(blackBeePay, 16)),
                 ),
                 const SizedBox(height: 8),
-                _AddPassengerButton(),
+                const _PassengersSection(),
 
                 const SizedBox(height: 10),
 
@@ -190,7 +205,7 @@ class InfoReservaScreen extends StatelessWidget {
   }
 }
 
-/// ------------ CARD CON SOMBRA SUAVE (idéntico a tus contenedores blancos) -------------
+/// ------------ CARD CON SOMBRA SUAVE -------------
 class _ReCard extends StatelessWidget {
   final Widget child;
   const _ReCard({required this.child});
@@ -214,7 +229,7 @@ class _ReCard extends StatelessWidget {
   }
 }
 
-/// ------------ CABECERA LEGS (logo + fecha + resumen central) -------------
+/// ------------ CABECERA LEGS -------------
 class _LegsHeader extends StatelessWidget {
   final List<Leg> legs;
   const _LegsHeader({required this.legs});
@@ -226,7 +241,6 @@ class _LegsHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // (logo + fecha)
         Row(
           children: [
             _Logo(legs.first.logoCarrier),
@@ -241,8 +255,6 @@ class _LegsHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-
-        // Resumen central (mismo patrón visual)
         Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           decoration: BoxDecoration(
@@ -251,7 +263,6 @@ class _LegsHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // salida
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -261,18 +272,13 @@ class _LegsHeader extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              // info central
               Column(
                 children: [
-                  Text(
-                    totalConex > 0 ? 'Conexiones: $totalConex' : 'Directo',
-                    style: semibold(gris6, 12),
-                  ),
+                  Text(totalConex > 0 ? 'Conexiones: $totalConex' : 'Directo', style: semibold(gris6, 12)),
                   Text('Vuelo ${legs.first.flightNumber}', style: semibold(blackBeePay, 13)),
                 ],
               ),
               const Spacer(),
-              // llegada
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -285,15 +291,12 @@ class _LegsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // equipaje
         Text(
           (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0')
               ? '* Incluye equipaje'
               : '* No incluye equipaje',
           style: semibold(
-            (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0')
-                ? cupertinoGreen
-                : rojo,
+            (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0') ? cupertinoGreen : rojo,
             12,
           ),
         ),
@@ -311,7 +314,7 @@ class _LegsHeader extends StatelessWidget {
   }
 }
 
-/// ------------ LISTA EXPANDIBLE DE LEGS (estética como en tu pantalla) -------------
+/// ------------ LISTA EXPANDIBLE DE LEGS -------------
 class _LegsExpansions extends StatelessWidget {
   final List<Leg> legs;
   const _LegsExpansions({required this.legs});
@@ -358,10 +361,7 @@ class _LegExpansion extends StatelessWidget {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            '${leg.nameCarrier} • Vuelo ${leg.flightNumber}',
-            style: regular(gris6, 12),
-          ),
+          child: Text('${leg.nameCarrier} • Vuelo ${leg.flightNumber}', style: regular(gris6, 12)),
         ),
         children: [
           _rowIconLine(
@@ -427,35 +427,90 @@ class _Logo extends StatelessWidget {
   }
 }
 
-/// ------------ PASAJEROS: BOTÓN AGREGAR (igual a tus botones blancos con ícono) -------------
-class _AddPassengerButton extends StatelessWidget {
+/// ------------ PASAJEROS: Sección completa -------------
+class _PassengersSection extends StatelessWidget {
+  const _PassengersSection();
+
+  Future<void> _add(BuildContext context) async {
+    try {
+      final selected = await Navigator.pushNamed(context, '/pasajeros');
+      if (selected != null && selected is Map) {
+        context.read<InfoReservaCubit>().addPassenger(Map<String, dynamic>.from(selected));
+      }
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pantalla de pasajeros no configurada')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () async {
-        try {
-          await Navigator.pushNamed(context, '/listapasajeros');
-        } catch (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pantalla de pasajeros no configurada')),
-          );
-        }
+    return BlocBuilder<InfoReservaCubit, InfoReservaState>(
+      builder: (context, st) {
+        return Column(
+          children: [
+            // Botón agregar
+            ElevatedButton(
+              onPressed: () => _add(context),
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                backgroundColor: blanco,
+                surfaceTintColor: blanco,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 6),
+                  const Icon(Icons.group_add, color: gris6, size: 28),
+                  const SizedBox(width: 10),
+                  Text('Agregar Pasajero', style: semibold(gris7, 14)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Lista seleccionados (si hay)
+            if (st.pasajeros.isNotEmpty)
+              _ReCard(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: st.pasajeros.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: gris1),
+                  itemBuilder: (_, i) {
+                    final p = st.pasajeros[i];
+                    final nombre = '${p['nombre'] ?? ''} ${p['apellido'] ?? ''}'.trim();
+                    final doc = p['numero_documento'] ?? p['documento'] ?? '';
+                    final tipo = (p['tipo_persona_legible'] ??
+                            (p['tipo_persona'] == 'ADUT'
+                                ? 'Adulto'
+                                : p['tipo_persona'] == 'CHILD'
+                                    ? 'Niño'
+                                    : p['tipo_persona'] == 'INF'
+                                        ? 'Bebé'
+                                        : ''))
+                        .toString();
+
+                    return ListTile(
+                      leading: const Icon(Icons.person, color: blackBeePay),
+                      title: Text(nombre.isEmpty ? 'Pasajero' : nombre, style: semibold(blackBeePay, 14)),
+                      subtitle: Text(
+                        [if (doc.toString().isNotEmpty) 'Doc: $doc', if (tipo.isNotEmpty) 'Tipo: $tipo'].join('  •  '),
+                        style: regular(gris6, 12),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close, color: gris6),
+                        onPressed: () => context.read<InfoReservaCubit>().removePassengerAt(i),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
       },
-      style: ElevatedButton.styleFrom(
-        elevation: 0,
-        backgroundColor: blanco,
-        surfaceTintColor: blanco,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 6),
-          const Icon(Icons.group_add, color: gris6, size: 28),
-          const SizedBox(width: 10),
-          Text('Agregar Pasajero', style: semibold(gris7, 14)),
-        ],
-      ),
     );
   }
 }
@@ -480,35 +535,27 @@ class _BillingCard extends StatelessWidget {
             _DividerThin(),
             const SizedBox(height: 4),
 
-            // Razón Social
             Text('Razón Social', style: regular(gris6, 13)),
             TextField(
               controller: razonCtrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: ' ',
-                hintStyle: regular(gris6, 14),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
-                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setRazon,
             ),
             const SizedBox(height: 14),
 
-            // NIT
             Text('Número de Identificación Tributaria', style: regular(gris6, 13)),
             TextField(
               controller: nitCtrl,
               keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: ' ',
-                hintStyle: regular(gris6, 14),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
-                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setNit,
@@ -560,7 +607,6 @@ class _ContactCardState extends State<_ContactCard> {
             _DividerThin(),
             const SizedBox(height: 4),
 
-            // Email
             Text('Correo electrónico', style: regular(gris6, 13)),
             TextField(
               controller: _emailCtrl,
@@ -568,16 +614,13 @@ class _ContactCardState extends State<_ContactCard> {
               decoration: const InputDecoration(
                 hintText: ' ',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
-                ),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setEmail,
             ),
             const SizedBox(height: 14),
 
-            // Teléfono con selector de país
             Text('Número de teléfono', style: regular(gris6, 13)),
             InternationalPhoneNumberInput(
               onInputChanged: (p) => cubit.setPhone(p),
@@ -594,9 +637,7 @@ class _ContactCardState extends State<_ContactCard> {
               inputDecoration: const InputDecoration(
                 hintText: ' ',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
-                ),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               inputBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: gris3),
@@ -616,7 +657,7 @@ class _DividerThin extends StatelessWidget {
       margin: const EdgeInsets.only(top: 10, bottom: 10),
       height: 1,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        border: Border.all(color: Color(0xFFE0E0E0), width: 1),
       ),
     );
   }
@@ -640,7 +681,6 @@ class _BottomBar extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // monto + puntos
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -659,13 +699,10 @@ class _BottomBar extends StatelessWidget {
                   ],
                 ),
               ),
-              // botón pagar
               ElevatedButton(
                 onPressed: () {
                   final form = context.read<InfoReservaCubit>().state;
-                  if ((form.email ?? '').isEmpty ||
-                      (form.razonSocial ?? '').isEmpty ||
-                      (form.nit ?? '').isEmpty) {
+                  if ((form.email ?? '').isEmpty || (form.razonSocial ?? '').isEmpty || (form.nit ?? '').isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Completá email, razón social y NIT')),
                     );

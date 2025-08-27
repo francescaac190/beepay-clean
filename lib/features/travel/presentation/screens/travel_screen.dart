@@ -17,7 +17,8 @@ class TravelScreen extends StatefulWidget {
   State<TravelScreen> createState() => _TravelScreenState();
 }
 
-class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMixin {
+class _TravelScreenState extends State<TravelScreen>
+    with TickerProviderStateMixin {
   late final AnimationController _swapCtrl;
   late final Animation<double> _swapAnim;
 
@@ -29,7 +30,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _swapCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    _swapCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200));
     _swapAnim = Tween(begin: 0.0, end: pi).animate(_swapCtrl);
 
     // Defaults de fechas al entrar si están vacías
@@ -86,19 +88,25 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
         ),
         centerTitle: true,
-        title: Image.asset('assets/iconos/Bee-pay-big.png', height: 28, fit: BoxFit.contain),
+        title: Image.asset('assets/iconos/Bee-pay-big.png',
+            height: 28, fit: BoxFit.contain),
       ),
       body: body(
         BlocConsumer<TravelBloc, TravelState>(
-          listenWhen: (p, c) => p.origin != c.origin || p.destination != c.destination || p.error != c.error,
+          listenWhen: (p, c) =>
+              p.origin != c.origin ||
+              p.destination != c.destination ||
+              p.error != c.error,
           listener: (context, s) {
             _originCtrl.text = s.origin?.concatenacion ?? '';
             _destCtrl.text = s.destination?.concatenacion ?? '';
             if (s.error != null) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.error!)));
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(s.error!)));
             }
           },
           builder: (context, s) {
@@ -110,11 +118,18 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Column(
                     children: [
-                      Text('¿A DÓNDE QUERÉS VIAJAR?', textAlign: TextAlign.center, style: black(gris7, 22)),
+                      Text('¿A DÓNDE QUERÉS VIAJAR?',
+                          textAlign: TextAlign.center, style: black(gris7, 22)),
                       const SizedBox(height: 6),
-                      Text('Seleccioná los detalles de tu vuelo', style: semibold(gris6, 14)),
+                      Text('Seleccioná los detalles de tu vuelo',
+                          style: semibold(gris6, 14)),
                       const SizedBox(height: 8),
-                      Container(height: 3, width: 120, decoration: BoxDecoration(color: amber, borderRadius: BorderRadius.circular(2))),
+                      Container(
+                          height: 3,
+                          width: 120,
+                          decoration: BoxDecoration(
+                              color: amber,
+                              borderRadius: BorderRadius.circular(2))),
                     ],
                   ),
                 ),
@@ -125,7 +140,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                   color: blanco,
                   surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -144,11 +160,16 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 options: s.airports,
                                 onSelected: (ap) {
                                   FocusScope.of(context).unfocus();
-                                  context.read<TravelBloc>().add(TravelSelectOrigin(ap));
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectOrigin(ap));
                                 },
                                 onClear: () {
-                                  context.read<TravelBloc>().add(TravelSelectOrigin(null));
-                                  _originCtrl.value = _originCtrl.value.copyWith(text: '');
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectOrigin(null));
+                                  _originCtrl.value =
+                                      _originCtrl.value.copyWith(text: '');
                                 },
                               ),
                             ),
@@ -175,8 +196,10 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: const [
-                                            Icon(Icons.arrow_downward_outlined, color: amber, size: 18),
-                                            Icon(Icons.arrow_upward_outlined, color: amber, size: 18),
+                                            Icon(Icons.arrow_downward_outlined,
+                                                color: amber, size: 18),
+                                            Icon(Icons.arrow_upward_outlined,
+                                                color: amber, size: 18),
                                           ],
                                         ),
                                       ),
@@ -202,11 +225,16 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 options: s.airports,
                                 onSelected: (ap) {
                                   FocusScope.of(context).unfocus();
-                                  context.read<TravelBloc>().add(TravelSelectDestination(ap));
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectDestination(ap));
                                 },
                                 onClear: () {
-                                  context.read<TravelBloc>().add(TravelSelectDestination(null));
-                                  _destCtrl.value = _destCtrl.value.copyWith(text: '');
+                                  context
+                                      .read<TravelBloc>()
+                                      .add(TravelSelectDestination(null));
+                                  _destCtrl.value =
+                                      _destCtrl.value.copyWith(text: '');
                                 },
                               ),
                             ),
@@ -220,14 +248,16 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                           children: [
                             Expanded(
                               child: _TripTypeDropdown(
-                                value: s.tripType == 'OW' ? 'Ida' : 'Ida y vuelta',
+                                value:
+                                    s.tripType == 'OW' ? 'Ida' : 'Ida y vuelta',
                                 onChanged: (v) {
                                   final bloc = context.read<TravelBloc>();
                                   final now = DateTime.now();
                                   final isOW = v == 'Ida';
 
                                   // Cambiar tipo
-                                  bloc.add(TravelSelectTripType(isOW ? 'OW' : 'RT'));
+                                  bloc.add(
+                                      TravelSelectTripType(isOW ? 'OW' : 'RT'));
 
                                   // Setear defaults según tipo si faltan
                                   if (isOW) {
@@ -235,7 +265,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                     bloc.add(TravelPickOneDate(d));
                                   } else {
                                     final start = bloc.state.rangeStart ?? now;
-                                    final end = bloc.state.rangeEnd ?? start.add(const Duration(days: 3));
+                                    final end = bloc.state.rangeEnd ??
+                                        start.add(const Duration(days: 3));
                                     bloc.add(TravelPickRange(start, end));
                                   }
                                 },
@@ -247,7 +278,9 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                                 adults: s.adults,
                                 kids: s.kids,
                                 babies: s.babies,
-                                onConfirm: (a, k, b) => context.read<TravelBloc>().add(TravelSetPassengers(a, k, b)),
+                                onConfirm: (a, k, b) => context
+                                    .read<TravelBloc>()
+                                    .add(TravelSetPassengers(a, k, b)),
                               ),
                             ),
                           ],
@@ -259,14 +292,17 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
 
                 const SizedBox(height: 18),
 
-                Center(child: Text('Seleccioná tus fechas:', style: extraBold(blackBeePay, 16))),
+                Center(
+                    child: Text('Seleccioná tus fechas:',
+                        style: extraBold(blackBeePay, 16))),
                 const SizedBox(height: 12),
 
                 Card(
                   color: blanco,
                   surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: s.tripType == 'OW'
@@ -275,24 +311,28 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                             onPick: () async {
                               final picked = await showDatePicker(
                                 context: context,
-                                initialEntryMode: DatePickerEntryMode.calendarOnly,
+                                initialEntryMode:
+                                    DatePickerEntryMode.calendarOnly,
                                 initialDate: s.oneWayDate ?? DateTime.now(),
                                 firstDate: DateTime.now(),
                                 lastDate: DateTime(2100),
                                 builder: (context, child) => Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                          primary: amber,
-                                          onPrimary: blanco,
-                                          surface: blanco,
-                                          onSurface: blackBeePay,
-                                        ),
+                                    colorScheme:
+                                        Theme.of(context).colorScheme.copyWith(
+                                              primary: amber,
+                                              onPrimary: blanco,
+                                              surface: blanco,
+                                              onSurface: blackBeePay,
+                                            ),
                                   ),
                                   child: child!,
                                 ),
                               );
                               if (picked != null) {
-                                context.read<TravelBloc>().add(TravelPickOneDate(picked));
+                                context
+                                    .read<TravelBloc>()
+                                    .add(TravelPickOneDate(picked));
                               }
                             },
                           )
@@ -303,23 +343,26 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                               final now = DateTime.now();
                               final range = await showDateRangePicker(
                                 context: context,
-                                initialEntryMode: DatePickerEntryMode.calendarOnly,
+                                initialEntryMode:
+                                    DatePickerEntryMode.calendarOnly,
                                 firstDate: now,
                                 lastDate: DateTime(2100),
                                 builder: (context, child) => Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                          primary: amber,
-                                          onPrimary: blanco,
-                                          surface: blanco,
-                                          onSurface: blackBeePay,
-                                        ),
+                                    colorScheme:
+                                        Theme.of(context).colorScheme.copyWith(
+                                              primary: amber,
+                                              onPrimary: blanco,
+                                              surface: blanco,
+                                              onSurface: blackBeePay,
+                                            ),
                                   ),
                                   child: child!,
                                 ),
                               );
                               if (range != null) {
-                                context.read<TravelBloc>().add(TravelPickRange(range.start, range.end));
+                                context.read<TravelBloc>().add(
+                                    TravelPickRange(range.start, range.end));
                               }
                             },
                           ),
@@ -334,7 +377,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                     style: FilledButton.styleFrom(
                       backgroundColor: amber,
                       foregroundColor: blanco,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
                       final bloc = context.read<TravelBloc>();
@@ -344,7 +388,8 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                       // Origen/Destino obligatorios
                       if (s.origin == null || s.destination == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Seleccioná origen y destino')),
+                          const SnackBar(
+                              content: Text('Seleccioná origen y destino')),
                         );
                         return;
                       }
@@ -352,10 +397,12 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                       // Inyectar fechas por defecto si faltan
                       if (s.tripType == 'OW') {
                         final d = s.oneWayDate ?? now;
-                        if (s.oneWayDate == null) bloc.add(TravelPickOneDate(d));
+                        if (s.oneWayDate == null)
+                          bloc.add(TravelPickOneDate(d));
                       } else {
                         final start = s.rangeStart ?? now;
-                        final end = s.rangeEnd ?? start.add(const Duration(days: 3));
+                        final end =
+                            s.rangeEnd ?? start.add(const Duration(days: 3));
                         if (s.rangeStart == null || s.rangeEnd == null) {
                           bloc.add(TravelPickRange(start, end));
                         }
@@ -365,6 +412,11 @@ class _TravelScreenState extends State<TravelScreen> with TickerProviderStateMix
                       bloc
                         ..add(TravelSubmit())
                         ..add(TravelSearchFlights());
+                      Navigator.pushNamed(
+                        context,
+                        '/resultados',
+                        arguments: bloc,
+                      );
 
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -475,7 +527,9 @@ class _OneDate extends StatelessWidget {
   const _OneDate({required this.date, required this.onPick});
   @override
   Widget build(BuildContext context) {
-    final label = date == null ? 'Fecha de Ida' : '${date!.day}/${date!.month}/${date!.year}';
+    final label = date == null
+        ? 'Fecha de Ida'
+        : '${date!.day}/${date!.month}/${date!.year}';
     return InkWell(
       onTap: onPick,
       borderRadius: BorderRadius.circular(12),
@@ -496,11 +550,16 @@ class _RangeDate extends StatelessWidget {
   final DateTime? start;
   final DateTime? end;
   final VoidCallback onPick;
-  const _RangeDate({required this.start, required this.end, required this.onPick});
+  const _RangeDate(
+      {required this.start, required this.end, required this.onPick});
   @override
   Widget build(BuildContext context) {
-    final ida = start == null ? 'Fecha de Ida' : '${start!.day}/${start!.month}/${start!.year}';
-    final vuelta = end == null ? 'Fecha de Vuelta' : '${end!.day}/${end!.month}/${end!.year}';
+    final ida = start == null
+        ? 'Fecha de Ida'
+        : '${start!.day}/${start!.month}/${start!.year}';
+    final vuelta = end == null
+        ? 'Fecha de Vuelta'
+        : '${end!.day}/${end!.month}/${end!.year}';
     return InkWell(
       onTap: onPick,
       borderRadius: BorderRadius.circular(12),
@@ -588,7 +647,8 @@ class _AirportAutocomplete extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               suffixIcon: IconButton(
                 icon: Icon(Icons.close, size: 18, color: gris5),
                 onPressed: () {
