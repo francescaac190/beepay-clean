@@ -4,6 +4,8 @@ import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:beepay/features/resetpw/presentation/bloc/recupera_bloc.dart';
 import 'package:beepay/features/resultados/presentation/screens/resultados_screen.dart'
     show ResultadosScreen;
+import 'package:beepay/features/travel/presentation/screens/agregar_pasajeros_screen.dart';
+import 'package:beepay/features/travel/presentation/screens/pasajeros_list_screen.dart';
 import 'package:beepay/injection_container.dart';
 import 'package:beepay/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'core/services/filesystem_manager.dart';
 import 'features/features.dart';
@@ -31,23 +34,33 @@ import 'features/travel/presentation/bloc/travel_event.dart';
 import 'features/travel/data/datasources/travel_remote_datasource.dart';
 import 'features/travel/data/repositories/travel_repository_impl.dart';
 import 'features/travel/presentation/screens/info_reserva.dart';
-// ==============================
-
-// ======= TOKEN (Secure Storage) =======
 import 'core/config/secure_storage_service.dart';
-// ======================================
 
-// ======= PASAJEROS =======
-import 'features/travel/presentation/screens/pasajeros_list_screen.dart';
-import 'features/travel/presentation/screens/agregar_pasajeros_screen.dart';
-// ========================
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: "assets/.env");
   init();
+
+  // ✅ Sembrar api_base_url si no existe (lo usan las pantallas de Pasajeros)
+  const _ss = FlutterSecureStorage();
+  final hasBase = await _ss.read(key: 'api_base_url');
+  if ((hasBase ?? '').isEmpty) {
+    await _ss.write(key: 'api_base_url', value: AppConfig.baseurl);
+    // ignore: avoid_print
+    print('[BOOT] api_base_url sembrado -> ${AppConfig.baseurl}');
+  } else {
+    // ignore: avoid_print
+    print('[BOOT] api_base_url existente -> $hasBase');
+  }
+
   await checkBiometricSupport();
 
+  // Debug de env
+  // ignore: avoid_print
+  print("ENV: ${AppConfig.environment}");
   // ignore: avoid_print
   print("Base URL: ${AppConfig.baseurl}");
   // ignore: avoid_print
@@ -137,10 +150,10 @@ class MyApp extends StatelessWidget {
           // Travel
           '/travel': (context) => const TravelRoute(),
 
-          // Pasajeros
+          // Pasajeros (usar SIEMPRE estas rutas)
           '/pasajeros': (context) => const PasajerosListScreen(),
           '/pasajeros/agregar': (context) => const AgregarPasajerosScreen(),
-          // alias legacy si algo aún usa este path
+          // alias legacy si algo aún usa ese path
           '/listapasajeros': (context) => const PasajerosListScreen(),
         },
         onGenerateRoute: (settings) {

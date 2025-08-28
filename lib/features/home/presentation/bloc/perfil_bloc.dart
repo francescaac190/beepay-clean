@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/perfil_usecase.dart';
 import '../../domain/entities/perfil_entity.dart';
+import '../../../../core/services/filesystem_manager.dart';
 
 abstract class PerfilState {}
 
@@ -30,6 +31,10 @@ class PerfilBloc extends Bloc<PerfilEvent, PerfilState> {
       emit(PerfilLoading());
       try {
         final perfil = await getCompletoUseCase.call();
+
+        // ✅ guarda los datos para toda la app
+        FileSystemManager.instance.setPerfil(perfil);
+
         emit(PerfilLoaded(perfil));
       } catch (e) {
         emit(PerfilError("Error al obtener perfil"));

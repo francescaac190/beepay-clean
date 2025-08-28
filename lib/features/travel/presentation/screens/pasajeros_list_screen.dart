@@ -1,4 +1,7 @@
+// lib/features/travel/presentation/screens/pasajeros_list_screen.dart
 import 'dart:convert';
+import 'package:beepay/core/config/app_config.dart';
+import 'package:beepay/core/config/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -10,7 +13,6 @@ import '../../../../core/cores.dart';
 abstract class PasajerosState {
   const PasajerosState();
 }
-
 class PasajerosLoading extends PasajerosState {}
 
 class PasajerosSuccess extends PasajerosState {
@@ -32,67 +34,98 @@ class PasajerosCubit extends Cubit<PasajerosState> {
 
   Future<void> fetch() async {
     emit(PasajerosLoading());
-    try {
-      final base = (await _storage.read(key: 'api_base_url')) ?? '';
-      final token = (await _storage.read(key: 'auth_token')) ?? '';
 
-      if (base.isEmpty || token.isEmpty) {
-        emit(const PasajerosError('Faltan credenciales locales'));
+    try {
+      // Lee base desde storage; si falta, usa AppConfig.baseurl
+      final storedBase = await _storage.read(key: 'api_base_url');
+      final base = (storedBase != null && storedBase.isNotEmpty)
+          ? storedBase
+          : AppConfig.baseurl;
+
+      // Lee token desde 'auth_token'; si falta, usa SecureStorageService
+      String? token = await _storage.read(key: 'auth_token');
+      token ??= await SecureStorageService.instance.getToken();
+
+      // Logs de diagnóstico
+      print('[PASAJEROS][FETCH] base(fromStorage="${storedBase ?? '-'}") -> using="$base"');
+      print('[PASAJEROS][FETCH] token len=${(token ?? '').length} '
+            '(null? ${token == null})');
+
+      if ((token ?? '').isEmpty) {
+        emit(const PasajerosError('No hay token (iniciá sesión)', statusCode: 401));
         return;
       }
 
-      final url = Uri.parse('${base.endsWith('/') ? base : '$base/'}buscarPersona');
+      final baseNorm = base.endsWith('/') ? base : '$base/';
+      final url = Uri.parse('${baseNorm}buscarPersona');
 
-      // ✅ headers correctos (sin cascada sobre const)
       final headers = <String, String>{
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       };
 
-      final res = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode({"busqueda": ""}),
-      );
+      final payload = {"busqueda": ""};
+      print('[PASAJEROS][REQ] POST $url');
+      print('[PASAJEROS][REQ] headers=$headers');
+      print('[PASAJEROS][REQ] body=$payload');
 
+      final res = await http.post(url, headers: headers, body: jsonEncode(payload));
+
+      print('[PASAJEROS][RES] status=${res.statusCode}');
       if (res.statusCode == 401) {
+        print('[PASAJEROS][RES] 401 -> sesión expirada');
         emit(const PasajerosError('No autenticado', statusCode: 401));
         return;
       }
-
       if (res.statusCode != 200) {
+        print('[PASAJEROS][RES] body=${res.body}');
         emit(PasajerosError('Error ${res.statusCode}: ${res.body}'));
         return;
       }
 
       final data = jsonDecode(res.body);
       final raw = (data['datos'] ?? data['data'] ?? []) as List;
+
+      print('[PASAJEROS][PARSE] items=${raw.length}');
+
       final items = raw.map<Map<String, dynamic>>((e) {
         final m = Map<String, dynamic>.from(e as Map);
+
+        final tipoRaw = (m['tipo_persona'] ?? m['tipoPersona'])?.toString() ?? '';
+        String tipoLegible;
+        switch (tipoRaw) {
+          case 'ADUT':
+            tipoLegible = 'Adulto';
+            break;
+          case 'CHILD':
+            tipoLegible = 'Niño';
+            break;
+          case 'INF':
+            tipoLegible = 'Bebé';
+            break;
+          default:
+            tipoLegible = tipoRaw;
+        }
+
         return {
-          'id': m['id'] ?? m['persona_id'],
-          'nombre': m['nombre'] ?? '',
-          'apellido': m['apellido'] ?? '',
-          'genero': m['genero'] ?? '',
-          'fecha_nacimiento': m['fecha_nacimiento'] ?? m['fechaNacimiento'] ?? '',
-          'id_documento': m['id_documento'] ?? 1,
-          'numero_documento': m['numero_documento'] ?? m['documento'] ?? '',
-          'telefono': m['telefono'] ?? '',
-          'email': m['email'] ?? '',
-          'tipo_persona': m['tipo_persona'] ?? m['tipoPersona'] ?? '',
-          'tipo_persona_legible': (m['tipo_persona'] ?? m['tipoPersona']) == 'ADUT'
-              ? 'Adulto'
-              : (m['tipo_persona'] ?? m['tipoPersona']) == 'CHILD'
-                  ? 'Niño'
-                  : (m['tipo_persona'] ?? m['tipoPersona']) == 'INF'
-                      ? 'Bebé'
-                      : (m['tipoPersona'] ?? ''),
+          'id'               : m['id'] ?? m['persona_id'],
+          'nombre'           : m['nombre'] ?? '',
+          'apellido'         : m['apellido'] ?? '',
+          'genero'           : m['genero'] ?? '',
+          'fecha_nacimiento' : m['fecha_nacimiento'] ?? m['fechaNacimiento'] ?? '',
+          'id_documento'     : m['id_documento'] ?? 1,
+          'numero_documento' : m['numero_documento'] ?? m['documento'] ?? '',
+          'telefono'         : m['telefono'] ?? '',
+          'email'            : m['email'] ?? '',
+          'tipo_persona'     : tipoRaw,
+          'tipo_persona_legible': tipoLegible,
         };
       }).toList();
 
       emit(PasajerosSuccess(items));
     } catch (e) {
+      print('[PASAJEROS][ERR] $e');
       emit(PasajerosError('Error de red: $e'));
     }
   }

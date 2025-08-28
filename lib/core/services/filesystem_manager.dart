@@ -11,6 +11,7 @@ class FileSystemManager {
   String? idUsuario;
   String? nombre;
   String? email;
+   String? cel;  
   String? categoria;
   String? fotoPerfil;
 
@@ -18,6 +19,7 @@ class FileSystemManager {
     idUsuario = perfil.id.toString();
     nombre = perfil.name;
     email = perfil.email;
+    cel        = perfil.cel; 
     categoria = perfil.categoria;
     fotoPerfil = perfil.fotoPerfil;
   }
