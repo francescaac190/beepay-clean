@@ -75,8 +75,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<AuthBloc>()),
         BlocProvider(create: (_) => sl<RegisterBloc>()),
         BlocProvider(create: (_) => sl<RecuperaBloc>()),
-        BlocProvider(create: (context) => sl<PerfilBloc>()..add(GetPerfilEvent())),
-        BlocProvider(create: (context) => sl<SaldoBloc>()..add(GetSaldoEvent())),
+        BlocProvider(
+            create: (context) => sl<PerfilBloc>()..add(GetPerfilEvent())),
+        BlocProvider(
+            create: (context) => sl<SaldoBloc>()..add(GetSaldoEvent())),
         BlocProvider(create: (context) => sl<BannerBloc>()),
       ],
       child: MaterialApp(
@@ -118,11 +120,11 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: SplashScreen(),
         routes: {
-          '/login': (context) => LoginStructure(),
+          '/login': (context) => const LoginStructure(),
           '/register': (context) => RegisterScreen(),
           '/recupera': (context) => RecuperaScreen(),
           '/ver_cuenta': (context) => VerCuentaScreen(),
-          '/home': (context) => HomeMain(),
+          '/home': (context) => const HomeMain(),
 
           // /travel usa un loader que arma el Bloc
           '/travel': (context) => const TravelRoute(),
@@ -187,7 +189,8 @@ class MyApp extends StatelessWidget {
                 if (fallback == null) {
                   return const Scaffold(
                     body: Center(
-                      child: Text('Falta TravelBloc al navegar a /info_reserva'),
+                      child:
+                          Text('Falta TravelBloc al navegar a /info_reserva'),
                     ),
                   );
                 }

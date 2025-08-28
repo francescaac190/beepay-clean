@@ -2,7 +2,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+// import 'package:intl_phone_number_input/intl_phone_number_input.dart'; // ← eliminado
+import 'package:country_code_picker/country_code_picker.dart';
+import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 import '../../../../core/cores.dart';
 import '../../domain/entities/flight.dart';
@@ -14,26 +16,40 @@ class InfoReservaState {
   final String? razonSocial;
   final String? nit;
   final String? email;
-  final PhoneNumber phone;
+
+  /// Teléfono
+  final String countryIso2; // ej. 'BO'
+  final String dialCode; // ej. '+591'
+  final String nationalNumber; // lo que el usuario escribe (sin prefijo)
+  final String? e164; // +59170000000 si es válido
 
   InfoReservaState({
     this.razonSocial,
     this.nit,
     this.email,
-    PhoneNumber? phone,
-  }) : phone = phone ?? PhoneNumber(isoCode: 'BO'); // +591 por defecto
+    this.countryIso2 = 'BO',
+    this.dialCode = '+591',
+    this.nationalNumber = '',
+    this.e164,
+  });
 
   InfoReservaState copyWith({
     String? razonSocial,
     String? nit,
     String? email,
-    PhoneNumber? phone,
+    String? countryIso2,
+    String? dialCode,
+    String? nationalNumber,
+    String? e164,
   }) {
     return InfoReservaState(
       razonSocial: razonSocial ?? this.razonSocial,
       nit: nit ?? this.nit,
       email: email ?? this.email,
-      phone: phone ?? this.phone,
+      countryIso2: countryIso2 ?? this.countryIso2,
+      dialCode: dialCode ?? this.dialCode,
+      nationalNumber: nationalNumber ?? this.nationalNumber,
+      e164: e164 ?? this.e164,
     );
   }
 }
@@ -44,7 +60,35 @@ class InfoReservaCubit extends Cubit<InfoReservaState> {
   void setRazon(String v) => emit(state.copyWith(razonSocial: v));
   void setNit(String v) => emit(state.copyWith(nit: v));
   void setEmail(String v) => emit(state.copyWith(email: v));
-  void setPhone(PhoneNumber v) => emit(state.copyWith(phone: v));
+
+  void setCountry({required String iso2, required String dial}) {
+    emit(state.copyWith(countryIso2: iso2, dialCode: dial));
+    _revalidatePhone();
+  }
+
+  void setNationalNumber(String v) {
+    emit(state.copyWith(nationalNumber: v));
+    _revalidatePhone();
+  }
+
+  void _revalidatePhone() {
+    try {
+      final iso = IsoCode.fromJson(state.countryIso2); // 'BO', 'AR', etc.
+      // armamos número crudo con prefijo + nsn escrito por el usuario
+      final raw = '${state.dialCode}${state.nationalNumber}';
+      final parsed = PhoneNumber.parse(
+        raw,
+        destinationCountry: iso,
+      );
+
+      final isValid = parsed.isValid(); // validación oficial
+      final e164 = isValid ? '+${parsed.countryCode}${parsed.nsn}' : null;
+
+      emit(state.copyWith(e164: e164));
+    } catch (_) {
+      emit(state.copyWith(e164: null));
+    }
+  }
 }
 
 /// ------------ PANTALLA -------------
@@ -77,7 +121,8 @@ class InfoReservaScreen extends StatelessWidget {
             final f = s.selectedFlight;
             if (f == null) {
               return Center(
-                child: Text('No hay vuelo seleccionado', style: semibold(gris7, 14)),
+                child: Text('No hay vuelo seleccionado',
+                    style: semibold(gris7, 14)),
               );
             }
 
@@ -88,13 +133,13 @@ class InfoReservaScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(15, 10, 15, 24),
               children: [
-                // Título principal (igual a tus screens)
+                // Título principal
                 Padding(
                   padding: const EdgeInsets.fromLTRB(5, 8, 5, 10),
                   child: Text('Reserva', style: bold(blackBeePay, 20)),
                 ),
 
-                // Resumen búsqueda (tarjeta con sombra suave)
+                // Resumen búsqueda
                 _ReCard(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -119,7 +164,7 @@ class InfoReservaScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // VUELO DE IDA (idéntico en jerarquía visual)
+                // VUELO DE IDA
                 _ReCard(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
@@ -190,7 +235,7 @@ class InfoReservaScreen extends StatelessWidget {
   }
 }
 
-/// ------------ CARD CON SOMBRA SUAVE (idéntico a tus contenedores blancos) -------------
+/// ------------ CARD CON SOMBRA SUAVE -------------
 class _ReCard extends StatelessWidget {
   final Widget child;
   const _ReCard({required this.child});
@@ -214,7 +259,7 @@ class _ReCard extends StatelessWidget {
   }
 }
 
-/// ------------ CABECERA LEGS (logo + fecha + resumen central) -------------
+/// ------------ CABECERA LEGS -------------
 class _LegsHeader extends StatelessWidget {
   final List<Leg> legs;
   const _LegsHeader({required this.legs});
@@ -226,7 +271,6 @@ class _LegsHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // (logo + fecha)
         Row(
           children: [
             _Logo(legs.first.logoCarrier),
@@ -241,8 +285,6 @@ class _LegsHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-
-        // Resumen central (mismo patrón visual)
         Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           decoration: BoxDecoration(
@@ -251,32 +293,32 @@ class _LegsHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // salida
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(legs.first.departureTime, style: extraBold(blackBeePay, 14)),
+                  Text(legs.first.departureTime,
+                      style: extraBold(blackBeePay, 14)),
                   Text(legs.first.departureAirport, style: semibold(gris7, 13)),
                   Text(legs.first.departureCiudad, style: regular(gris6, 12)),
                 ],
               ),
               const Spacer(),
-              // info central
               Column(
                 children: [
                   Text(
                     totalConex > 0 ? 'Conexiones: $totalConex' : 'Directo',
                     style: semibold(gris6, 12),
                   ),
-                  Text('Vuelo ${legs.first.flightNumber}', style: semibold(blackBeePay, 13)),
+                  Text('Vuelo ${legs.first.flightNumber}',
+                      style: semibold(blackBeePay, 13)),
                 ],
               ),
               const Spacer(),
-              // llegada
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(legs.last.arrivalTime, style: extraBold(blackBeePay, 14)),
+                  Text(legs.last.arrivalTime,
+                      style: extraBold(blackBeePay, 14)),
                   Text(legs.last.arrivalAirport, style: semibold(gris7, 13)),
                   Text(legs.last.arrivalCiudad, style: regular(gris6, 12)),
                 ],
@@ -285,13 +327,14 @@ class _LegsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // equipaje
         Text(
-          (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0')
+          (legs.last.equipaje.trim().isNotEmpty &&
+                  legs.last.equipaje.trim() != '0')
               ? '* Incluye equipaje'
               : '* No incluye equipaje',
           style: semibold(
-            (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0')
+            (legs.last.equipaje.trim().isNotEmpty &&
+                    legs.last.equipaje.trim() != '0')
                 ? cupertinoGreen
                 : rojo,
             12,
@@ -311,7 +354,7 @@ class _LegsHeader extends StatelessWidget {
   }
 }
 
-/// ------------ LISTA EXPANDIBLE DE LEGS (estética como en tu pantalla) -------------
+/// ------------ LISTA EXPANDIBLE DE LEGS -------------
 class _LegsExpansions extends StatelessWidget {
   final List<Leg> legs;
   const _LegsExpansions({required this.legs});
@@ -381,14 +424,17 @@ class _LegExpansion extends StatelessWidget {
           _rowIconLine(
             icon: Icons.luggage_rounded,
             left: 'Equipaje',
-            right: (leg.equipaje.trim().isEmpty || leg.equipaje.trim() == '0') ? '0' : leg.equipaje,
+            right: (leg.equipaje.trim().isEmpty || leg.equipaje.trim() == '0')
+                ? '0'
+                : leg.equipaje,
           ),
         ],
       ),
     );
   }
 
-  Widget _rowIconLine({required IconData icon, required String left, required String right}) {
+  Widget _rowIconLine(
+      {required IconData icon, required String left, required String right}) {
     return Row(
       children: [
         Icon(icon, size: 18, color: blackBeePay),
@@ -427,7 +473,7 @@ class _Logo extends StatelessWidget {
   }
 }
 
-/// ------------ PASAJEROS: BOTÓN AGREGAR (igual a tus botones blancos con ícono) -------------
+/// ------------ PASAJEROS: BOTÓN AGREGAR -------------
 class _AddPassengerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -437,7 +483,8 @@ class _AddPassengerButton extends StatelessWidget {
           await Navigator.pushNamed(context, '/listapasajeros');
         } catch (_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pantalla de pasajeros no configurada')),
+            const SnackBar(
+                content: Text('Pantalla de pasajeros no configurada')),
           );
         }
       },
@@ -445,7 +492,8 @@ class _AddPassengerButton extends StatelessWidget {
         elevation: 0,
         backgroundColor: blanco,
         surfaceTintColor: blanco,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       ),
       child: Row(
@@ -467,7 +515,8 @@ class _BillingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<InfoReservaCubit>();
-    final razonCtrl = TextEditingController(text: cubit.state.razonSocial ?? '');
+    final razonCtrl =
+        TextEditingController(text: cubit.state.razonSocial ?? '');
     final nitCtrl = TextEditingController(text: cubit.state.nit ?? '');
 
     return _ReCard(
@@ -498,10 +547,12 @@ class _BillingCard extends StatelessWidget {
             const SizedBox(height: 14),
 
             // NIT
-            Text('Número de Identificación Tributaria', style: regular(gris6, 13)),
+            Text('Número de Identificación Tributaria',
+                style: regular(gris6, 13)),
             TextField(
               controller: nitCtrl,
-              keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                  signed: true, decimal: true),
               decoration: InputDecoration(
                 hintText: ' ',
                 hintStyle: regular(gris6, 14),
@@ -531,6 +582,7 @@ class _ContactCard extends StatefulWidget {
 class _ContactCardState extends State<_ContactCard> {
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
+  String? _phoneError; // mensaje de error local
 
   @override
   void initState() {
@@ -549,6 +601,10 @@ class _ContactCardState extends State<_ContactCard> {
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<InfoReservaCubit>();
+    final st = cubit.state;
+
+    // Si ya hay valor válido (e164), podrías usarlo para debug:
+    // print('E164 => ${st.e164}');
 
     return _ReCard(
       child: Padding(
@@ -577,35 +633,69 @@ class _ContactCardState extends State<_ContactCard> {
             ),
             const SizedBox(height: 14),
 
-            // Teléfono con selector de país
+            // Teléfono con selector de país (CountryCodePicker + TextField)
             Text('Número de teléfono', style: regular(gris6, 13)),
-            InternationalPhoneNumberInput(
-              onInputChanged: (p) => cubit.setPhone(p),
-              initialValue: cubit.state.phone,
-              selectorConfig: const SelectorConfig(
-                selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                useBottomSheetSafeArea: true,
-                showFlags: true,
-              ),
-              autoValidateMode: AutovalidateMode.disabled,
-              ignoreBlank: false,
-              textFieldController: _phoneCtrl,
-              keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
-              inputDecoration: const InputDecoration(
-                hintText: ' ',
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
+            Row(
+              children: [
+                CountryCodePicker(
+                  onChanged: (cc) {
+                    final iso2 = (cc.code ?? 'BO');
+                    final dial = (cc.dialCode ?? st.dialCode);
+                    context.read<InfoReservaCubit>().setCountry(
+                          iso2: iso2,
+                          dial: dial,
+                        );
+                    // revalida con el texto actual:
+                    _validateAndUpdate(context, st.nationalNumber);
+                  },
+                  initialSelection: st.countryIso2,
+                  showCountryOnly: false,
+                  showOnlyCountryWhenClosed: false,
+                  alignLeft: false,
+                  favorite: const ['BO', 'AR', 'CL', 'PE', 'BR', 'US', 'ES'],
                 ),
-              ),
-              inputBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: gris3),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      hintText: ' ',
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: gris3),
+                      ),
+                      // mostramos prefijo a la izquierda
+                      prefixText: '${st.dialCode} ',
+                      errorText: _phoneError,
+                    ),
+                    style: regular(blackBeePay, 16),
+                    onChanged: (v) => _validateAndUpdate(context, v),
+                  ),
+                ),
+              ],
             ),
+            if (st.e164 != null) // opcional: mostrar el formato internacional
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text('Teléfono (E.164): ${st.e164}',
+                    style: regular(gris6, 12)),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  void _validateAndUpdate(BuildContext context, String v) {
+    final cubit = context.read<InfoReservaCubit>();
+    cubit.setNationalNumber(v);
+
+    // actualizamos mensaje de error local
+    final e164 = cubit.state.e164;
+    setState(() {
+      _phoneError = (v.isEmpty || e164 != null) ? null : 'Número inválido';
+    });
   }
 }
 
@@ -646,14 +736,17 @@ class _BottomBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${f.totalCurrency}. ${f.totalAmountFee}', style: semibold(blackBeePay, 20)),
+                    Text('${f.totalCurrency}. ${f.totalAmountFee}',
+                        style: semibold(blackBeePay, 20)),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.local_fire_department, size: 16, color: amber),
+                        const Icon(Icons.local_fire_department,
+                            size: 16, color: amber),
                         const SizedBox(width: 6),
-                        Text('Desde ${f.puntos} BeePuntos', style: medium(amber, 16)),
+                        Text('Desde ${f.puntos} BeePuntos',
+                            style: medium(amber, 16)),
                       ],
                     ),
                   ],
@@ -665,22 +758,28 @@ class _BottomBar extends StatelessWidget {
                   final form = context.read<InfoReservaCubit>().state;
                   if ((form.email ?? '').isEmpty ||
                       (form.razonSocial ?? '').isEmpty ||
-                      (form.nit ?? '').isEmpty) {
+                      (form.nit ?? '').isEmpty ||
+                      (form.e164 ?? '').isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Completá email, razón social y NIT')),
+                      const SnackBar(
+                          content: Text(
+                              'Completá email, razón social, NIT y teléfono válido')),
                     );
                     return;
                   }
+                  // Aquí ya tienes el teléfono en formato E.164 en form.e164
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Flujo de pago pendiente de integrar')),
+                    SnackBar(content: Text('OK. Teléfono: ${form.e164}')),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: amber,
                   foregroundColor: blanco,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 ),
                 child: Text('Ir a pagar', style: semibold(blanco, 18)),
               ),
