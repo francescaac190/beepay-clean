@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:intl_phone_number_input/intl_phone_number_input.dart'; // ← eliminado
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
@@ -11,6 +10,24 @@ import '../../../../core/cores.dart';
 import '../../domain/entities/flight.dart';
 import '../bloc/travel_bloc.dart';
 import '../bloc/travel_state.dart';
+
+/// ======== NEW: Cubit para pasajeros seleccionados ========
+class SelectedPassengersCubit extends Cubit<List<Map<String, dynamic>>> {
+  SelectedPassengersCubit() : super(const []);
+
+  void addPassenger(Map<String, dynamic> p) {
+    final id = p['id'] ?? p['persona_id'];
+    final exists = state.any((e) => (e['id'] ?? e['persona_id']) == id);
+    if (exists) return;
+    emit([...state, p]);
+  }
+
+  void removePassengerById(dynamic id) {
+    emit(state.where((e) => (e['id'] ?? e['persona_id']) != id).toList());
+  }
+
+  void clear() => emit(const []);
+}
 
 /// ------------ CUBIT PARA EL FORM -------------
 class InfoReservaState {
@@ -75,16 +92,13 @@ class InfoReservaCubit extends Cubit<InfoReservaState> {
   void _revalidatePhone() {
     try {
       final iso = IsoCode.fromJson(state.countryIso2); // 'BO', 'AR', etc.
-      // armamos número crudo con prefijo + nsn escrito por el usuario
       final raw = '${state.dialCode}${state.nationalNumber}';
       final parsed = PhoneNumber.parse(
         raw,
         destinationCountry: iso,
       );
-
-      final isValid = parsed.isValid(); // validación oficial
+      final isValid = parsed.isValid();
       final e164 = isValid ? '+${parsed.countryCode}${parsed.nsn}' : null;
-
       emit(state.copyWith(e164: e164));
     } catch (_) {
       emit(state.copyWith(e164: null));
@@ -98,8 +112,11 @@ class InfoReservaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => InfoReservaCubit(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => InfoReservaCubit()),
+        BlocProvider(create: (_) => SelectedPassengersCubit()),
+      ],
       child: Scaffold(
         backgroundColor: background2,
         appBar: AppBar(
@@ -209,7 +226,10 @@ class InfoReservaScreen extends StatelessWidget {
                   child: Text('Pasajeros', style: bold(blackBeePay, 16)),
                 ),
                 const SizedBox(height: 8),
-                _AddPassengerButton(),
+                const _AddPassengerButton(),
+
+                const SizedBox(height: 8),
+                const _SelectedPassengersCard(),
 
                 const SizedBox(height: 10),
 
@@ -480,14 +500,90 @@ class _Logo extends StatelessWidget {
   }
 }
 
+/// ======== Helpers de conteo por tipo de pasajero ========
+Map<String, int> _countByType(List<Map<String, dynamic>> list) {
+  int adut = 0, child = 0, inf = 0;
+  for (final p in list) {
+    final t = (p['tipo_persona'] ?? p['tipoPersona'] ?? '').toString();
+    if (t == 'ADUT') {
+      adut++;
+    } else if (t == 'CHILD') {
+      child++;
+    } else if (t == 'INF') {
+      inf++;
+    }
+  }
+  return {'ADUT': adut, 'CHILD': child, 'INF': inf};
+}
+
+String _tipoLabelCorto(String code) {
+  switch (code) {
+    case 'ADUT':
+      return 'Adultos';
+    case 'CHILD':
+      return 'Niños';
+    case 'INF':
+      return 'Bebés';
+    default:
+      return code;
+  }
+}
+
 /// ------------ PASAJEROS: BOTÓN AGREGAR -------------
 class _AddPassengerButton extends StatelessWidget {
+  const _AddPassengerButton();
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () async {
         try {
-          await Navigator.pushNamed(context, '/listapasajeros');
+          final res = await Navigator.pushNamed(context, '/listapasajeros');
+          if (res is Map<String, dynamic>) {
+            final tipo =
+                (res['tipo_persona'] ?? res['tipoPersona'] ?? '').toString();
+
+            // Estado actual
+            final selected = context.read<SelectedPassengersCubit>().state;
+            final counts = _countByType(selected);
+
+            // Requeridos desde la búsqueda (TravelBloc)
+            final ts = context.read<TravelBloc>().state;
+            final needA = ts.adults ?? 0;
+            final needK = ts.kids ?? 0;
+            final needB = ts.babies ?? 0;
+
+            bool canAdd = true;
+            String? bloqueLabel;
+
+            if (tipo == 'ADUT' && counts['ADUT']! >= needA) {
+              canAdd = false;
+              bloqueLabel = _tipoLabelCorto('ADUT');
+            } else if (tipo == 'CHILD' && counts['CHILD']! >= needK) {
+              canAdd = false;
+              bloqueLabel = _tipoLabelCorto('CHILD');
+            } else if (tipo == 'INF' && counts['INF']! >= needB) {
+              canAdd = false;
+              bloqueLabel = _tipoLabelCorto('INF');
+            }
+
+            if (!canAdd) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content:
+                        Text('Ya alcanzaste el máximo de $bloqueLabel')),
+              );
+              return;
+            }
+
+            context.read<SelectedPassengersCubit>().addPassenger(res);
+
+            final nombre =
+                '${res['nombre'] ?? ''} ${res['apellido'] ?? ''}'.trim();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Pasajero agregado: $nombre')),
+            );
+          }
         } catch (_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -511,6 +607,113 @@ class _AddPassengerButton extends StatelessWidget {
           Text('Agregar Pasajero', style: semibold(gris7, 14)),
         ],
       ),
+    );
+  }
+}
+
+/// ======== Tarjeta que muestra los pasajeros seleccionados ========
+class _SelectedPassengersCard extends StatelessWidget {
+  const _SelectedPassengersCard();
+
+  String _tipoLegible(String? code) {
+    switch (code) {
+      case 'INF':
+        return 'Bebé';
+      case 'CHILD':
+        return 'Niño';
+      case 'ADUT':
+        return 'Adulto';
+      default:
+        return (code ?? '');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SelectedPassengersCubit, List<Map<String, dynamic>>>(
+      builder: (context, list) {
+        return _ReCard(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('Seleccionados', style: bold(blackBeePay, 16)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: background2,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text('${list.length}',
+                          style: semibold(gris7, 12)),
+                    ),
+                    const Spacer(),
+                    if (list.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: () =>
+                            context.read<SelectedPassengersCubit>().clear(),
+                        icon: const Icon(Icons.clear_all, size: 18),
+                        label: Text('Limpiar', style: semibold(gris7, 13)),
+                      ),
+                  ],
+                ),
+                 _DividerThin(),
+                if (list.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text('Aún no seleccionaste pasajeros.',
+                        style: regular(gris6, 13)),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 0.5, color: gris1),
+                    itemBuilder: (_, i) {
+                      final p = list[i];
+                      final nombre =
+                          '${p['nombre'] ?? ''} ${p['apellido'] ?? ''}'.trim();
+                      final tipo = _tipoLegible(
+                          (p['tipo_persona'] ?? p['tipoPersona'])?.toString());
+                      final doc = (p['numero_documento'] ?? p['documento'] ?? '')
+                          .toString();
+                      final id = p['id'] ?? p['persona_id'];
+
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.person, color: blackBeePay),
+                        title:
+                            Text(nombre, style: semibold(blackBeePay, 14)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (tipo.isNotEmpty)
+                              Text('Tipo: $tipo', style: regular(gris6, 12)),
+                            if (doc.isNotEmpty)
+                              Text('Doc.: $doc', style: regular(gris6, 12)),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close, color: gris5),
+                          onPressed: () => context
+                              .read<SelectedPassengersCubit>()
+                              .removePassengerById(id),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -548,11 +751,9 @@ class _BillingCardState extends State<_BillingCard> {
   Widget build(BuildContext context) {
     final cubit = context.read<InfoReservaCubit>();
 
-    // Tomamos la lista de facturas del perfil, sólo se reconstruye si cambia esa lista
     final facturas = context.select<PerfilBloc, List<_Factura>>((bloc) {
       final st = bloc.state;
       if (st is PerfilLoaded) {
-        // ⚠️ Ajusta los nombres a tu entidad real
         final items = st.perfil.facturacion ?? <dynamic>[];
         return items
             .map<_Factura>((e) {
@@ -590,7 +791,6 @@ class _BillingCardState extends State<_BillingCard> {
               onSelected: (f) => _selectFactura(f, cubit),
               fieldViewBuilder:
                   (context, textCtrl, focusNode, onFieldSubmitted) {
-                // Usamos el controller del autocomplete para este campo
                 textCtrl.value = _razonCtrl.value;
                 _razonCtrl = textCtrl;
 
@@ -661,7 +861,7 @@ class _BillingCardState extends State<_BillingCard> {
             ),
             const SizedBox(height: 14),
 
-            // NIT (se rellena al elegir una factura)
+            // NIT
             Text('Número de Identificación Tributaria',
                 style: regular(gris6, 13)),
             TextField(
@@ -741,7 +941,7 @@ class _ContactCard extends StatefulWidget {
 class _ContactCardState extends State<_ContactCard> {
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
-  String? _phoneError; // mensaje de error local
+  String? _phoneError;
 
   @override
   void initState() {
@@ -761,9 +961,6 @@ class _ContactCardState extends State<_ContactCard> {
   Widget build(BuildContext context) {
     final cubit = context.watch<InfoReservaCubit>();
     final st = cubit.state;
-
-    // Si ya hay valor válido (e164), podrías usarlo para debug:
-    // print('E164 => ${st.e164}');
 
     return _ReCard(
       child: Padding(
@@ -792,7 +989,7 @@ class _ContactCardState extends State<_ContactCard> {
             ),
             const SizedBox(height: 14),
 
-            // Teléfono con selector de país (CountryCodePicker + TextField)
+            // Teléfono
             Text('Número de teléfono', style: regular(gris6, 13)),
             Row(
               children: [
@@ -804,7 +1001,6 @@ class _ContactCardState extends State<_ContactCard> {
                           iso2: iso2,
                           dial: dial,
                         );
-                    // revalida con el texto actual:
                     _validateAndUpdate(context, st.nationalNumber);
                   },
                   initialSelection: st.countryIso2,
@@ -824,7 +1020,6 @@ class _ContactCardState extends State<_ContactCard> {
                       focusedBorder: const UnderlineInputBorder(
                         borderSide: BorderSide(color: gris3),
                       ),
-                      // mostramos prefijo a la izquierda
                       prefixText: '${st.dialCode} ',
                       errorText: _phoneError,
                     ),
@@ -834,7 +1029,7 @@ class _ContactCardState extends State<_ContactCard> {
                 ),
               ],
             ),
-            if (st.e164 != null) // opcional: mostrar el formato internacional
+            if (st.e164 != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text('Teléfono (E.164): ${st.e164}',
@@ -849,8 +1044,6 @@ class _ContactCardState extends State<_ContactCard> {
   void _validateAndUpdate(BuildContext context, String v) {
     final cubit = context.read<InfoReservaCubit>();
     cubit.setNationalNumber(v);
-
-    // actualizamos mensaje de error local
     final e164 = cubit.state.e164;
     setState(() {
       _phoneError = (v.isEmpty || e164 != null) ? null : 'Número inválido';
@@ -926,9 +1119,45 @@ class _BottomBar extends StatelessWidget {
                     );
                     return;
                   }
-                  // Aquí ya tienes el teléfono en formato E.164 en form.e164
+
+                  // ===== Validación de cantidades requeridas vs seleccionadas =====
+                  final seleccionados =
+                      context.read<SelectedPassengersCubit>().state;
+                  final c = _countByType(seleccionados);
+
+                  // Requeridos
+                  final needA = s.adults ?? 0;
+                  final needK = s.kids ?? 0;
+                  final needB = s.babies ?? 0;
+
+                  // Chequear igualdad exacta
+                  final mismatches = <String>[];
+                  if (c['ADUT'] != needA) {
+                    mismatches.add('Adultos: ${c['ADUT']} de $needA');
+                  }
+                  if (c['CHILD'] != needK) {
+                    mismatches.add('Niños: ${c['CHILD']} de $needK');
+                  }
+                  if (c['INF'] != needB) {
+                    mismatches.add('Bebés: ${c['INF']} de $needB');
+                  }
+
+                  if (mismatches.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Seleccioná la cantidad correcta de pasajeros.\n${mismatches.join(' • ')}',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // OK: continuar flujo (aquí va tu navegación real a pago)
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('OK. Teléfono: ${form.e164}')),
+                    SnackBar(
+                        content: Text(
+                            'OK. Teléfono: ${form.e164} • Pasajeros: ${seleccionados.length}')),
                   );
                 },
                 style: ElevatedButton.styleFrom(
