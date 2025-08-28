@@ -18,12 +18,11 @@ class PassengersButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => _open(context),
-      borderRadius: BorderRadius.circular(28),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         decoration: BoxDecoration(
           color: background2,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -40,10 +39,11 @@ class PassengersButton extends StatelessWidget {
   }
 
   Widget _chip(IconData icon, int v) => Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 16, color: gris7),
           const SizedBox(width: 3),
-          Text('$v', style: bold(blackBeePay, 14)),
+          Text('$v', style: bold(gris7, 14)),
         ],
       );
 
@@ -102,7 +102,6 @@ class PassengersButton extends StatelessWidget {
                         style: regular(gris6, 13)),
                   ),
                   const SizedBox(height: 16),
-
                   _rowStepper(
                     label: 'Adultos',
                     icon: Icons.supervisor_account,
@@ -130,7 +129,6 @@ class PassengersButton extends StatelessWidget {
                     onDec: decB,
                     onInc: incB,
                   ),
-
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,

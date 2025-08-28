@@ -105,8 +105,9 @@ class _TravelScreenState extends State<TravelScreen>
             _originCtrl.text = s.origin?.concatenacion ?? '';
             _destCtrl.text = s.destination?.concatenacion ?? '';
             if (s.error != null) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(s.error!)));
+              Mensaje(context, s.error!);
+              // ScaffoldMessenger.of(context)
+              //     .showSnackBar(SnackBar(content: Text(s.error!)));
             }
           },
           builder: (context, s) {
@@ -387,10 +388,11 @@ class _TravelScreenState extends State<TravelScreen>
 
                       // Origen/Destino obligatorios
                       if (s.origin == null || s.destination == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Seleccioná origen y destino')),
-                        );
+                        MensajeError(context, 'Seleccioná origen y destino');
+                        // ScaffoldMessenger.of(context).showSnackBar(
+                        //   const SnackBar(
+                        //       content: Text('Seleccioná origen y destino')),
+                        // );
                         return;
                       }
 
@@ -497,10 +499,10 @@ class _TripTypeDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
       decoration: BoxDecoration(
         color: background2,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: DropdownButton<String>(
         value: value,
@@ -537,7 +539,6 @@ class _OneDate extends StatelessWidget {
         height: 64,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: background2,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(label, style: semibold(blackBeePay, 15)),
@@ -567,7 +568,6 @@ class _RangeDate extends StatelessWidget {
         height: 64,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: background2,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -641,7 +641,7 @@ class _AirportAutocomplete extends StatelessWidget {
             },
             decoration: InputDecoration(
               hintText: label,
-              hintStyle: semibold(gris6, 14),
+              hintStyle: medium(gris6, 14),
               filled: false,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -658,7 +658,7 @@ class _AirportAutocomplete extends StatelessWidget {
                 },
               ),
             ),
-            style: semibold(blackBeePay, 15),
+            style: medium(blackBeePay, 15),
           ),
         );
       },
@@ -685,7 +685,7 @@ class _AirportAutocomplete extends StatelessWidget {
                     leading: const Icon(Icons.flight, color: blackBeePay),
                     title: Text(
                       '${ap.iata.toUpperCase()}, ${ap.name}',
-                      style: extraBold(blackBeePay, 14),
+                      style: medium(blackBeePay, 14),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

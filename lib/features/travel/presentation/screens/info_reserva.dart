@@ -2,20 +2,19 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
 import '../../../../core/cores.dart';
 import '../../domain/entities/flight.dart';
 import '../bloc/travel_bloc.dart';
 import '../bloc/travel_state.dart';
+import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
-/// ------------ STATE del formulario + pasajeros -------------
 class InfoReservaState {
   final String? razonSocial;
   final String? nit;
   final String? email;
-  final PhoneNumber phone;
-  final List<Map<String, dynamic>> pasajeros; // ← seleccionados
+  final PhoneNumber? phone; // ← ahora opcional
+  final List<Map<String, dynamic>> pasajeros;
 
   InfoReservaState({
     this.razonSocial,
@@ -23,7 +22,8 @@ class InfoReservaState {
     this.email,
     PhoneNumber? phone,
     List<Map<String, dynamic>>? pasajeros,
-  })  : phone = phone ?? PhoneNumber(isoCode: 'BO'), // +591 por defecto
+  })  : phone =
+            phone ?? PhoneNumber(isoCode: IsoCode.BO, nsn: ''), // +591 vacío
         pasajeros = pasajeros ?? const [];
 
   InfoReservaState copyWith({
@@ -57,7 +57,8 @@ class InfoReservaCubit extends Cubit<InfoReservaState> {
   }
 
   void removePassengerAt(int i) {
-    final updated = List<Map<String, dynamic>>.from(state.pasajeros)..removeAt(i);
+    final updated = List<Map<String, dynamic>>.from(state.pasajeros)
+      ..removeAt(i);
     emit(state.copyWith(pasajeros: updated));
   }
 }
@@ -92,7 +93,8 @@ class InfoReservaScreen extends StatelessWidget {
             final f = s.selectedFlight;
             if (f == null) {
               return Center(
-                child: Text('No hay vuelo seleccionado', style: semibold(gris7, 14)),
+                child: Text('No hay vuelo seleccionado',
+                    style: semibold(gris7, 14)),
               );
             }
 
@@ -266,7 +268,8 @@ class _LegsHeader extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(legs.first.departureTime, style: extraBold(blackBeePay, 14)),
+                  Text(legs.first.departureTime,
+                      style: extraBold(blackBeePay, 14)),
                   Text(legs.first.departureAirport, style: semibold(gris7, 13)),
                   Text(legs.first.departureCiudad, style: regular(gris6, 12)),
                 ],
@@ -274,15 +277,18 @@ class _LegsHeader extends StatelessWidget {
               const Spacer(),
               Column(
                 children: [
-                  Text(totalConex > 0 ? 'Conexiones: $totalConex' : 'Directo', style: semibold(gris6, 12)),
-                  Text('Vuelo ${legs.first.flightNumber}', style: semibold(blackBeePay, 13)),
+                  Text(totalConex > 0 ? 'Conexiones: $totalConex' : 'Directo',
+                      style: semibold(gris6, 12)),
+                  Text('Vuelo ${legs.first.flightNumber}',
+                      style: semibold(blackBeePay, 13)),
                 ],
               ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(legs.last.arrivalTime, style: extraBold(blackBeePay, 14)),
+                  Text(legs.last.arrivalTime,
+                      style: extraBold(blackBeePay, 14)),
                   Text(legs.last.arrivalAirport, style: semibold(gris7, 13)),
                   Text(legs.last.arrivalCiudad, style: regular(gris6, 12)),
                 ],
@@ -292,11 +298,15 @@ class _LegsHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0')
+          (legs.last.equipaje.trim().isNotEmpty &&
+                  legs.last.equipaje.trim() != '0')
               ? '* Incluye equipaje'
               : '* No incluye equipaje',
           style: semibold(
-            (legs.last.equipaje.trim().isNotEmpty && legs.last.equipaje.trim() != '0') ? cupertinoGreen : rojo,
+            (legs.last.equipaje.trim().isNotEmpty &&
+                    legs.last.equipaje.trim() != '0')
+                ? cupertinoGreen
+                : rojo,
             12,
           ),
         ),
@@ -361,7 +371,8 @@ class _LegExpansion extends StatelessWidget {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text('${leg.nameCarrier} • Vuelo ${leg.flightNumber}', style: regular(gris6, 12)),
+          child: Text('${leg.nameCarrier} • Vuelo ${leg.flightNumber}',
+              style: regular(gris6, 12)),
         ),
         children: [
           _rowIconLine(
@@ -381,14 +392,17 @@ class _LegExpansion extends StatelessWidget {
           _rowIconLine(
             icon: Icons.luggage_rounded,
             left: 'Equipaje',
-            right: (leg.equipaje.trim().isEmpty || leg.equipaje.trim() == '0') ? '0' : leg.equipaje,
+            right: (leg.equipaje.trim().isEmpty || leg.equipaje.trim() == '0')
+                ? '0'
+                : leg.equipaje,
           ),
         ],
       ),
     );
   }
 
-  Widget _rowIconLine({required IconData icon, required String left, required String right}) {
+  Widget _rowIconLine(
+      {required IconData icon, required String left, required String right}) {
     return Row(
       children: [
         Icon(icon, size: 18, color: blackBeePay),
@@ -435,7 +449,9 @@ class _PassengersSection extends StatelessWidget {
     try {
       final selected = await Navigator.pushNamed(context, '/pasajeros');
       if (selected != null && selected is Map) {
-        context.read<InfoReservaCubit>().addPassenger(Map<String, dynamic>.from(selected));
+        context
+            .read<InfoReservaCubit>()
+            .addPassenger(Map<String, dynamic>.from(selected));
       }
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -457,8 +473,10 @@ class _PassengersSection extends StatelessWidget {
                 elevation: 0,
                 backgroundColor: blanco,
                 surfaceTintColor: blanco,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               ),
               child: Row(
                 children: [
@@ -478,10 +496,12 @@ class _PassengersSection extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: st.pasajeros.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: gris1),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, color: gris1),
                   itemBuilder: (_, i) {
                     final p = st.pasajeros[i];
-                    final nombre = '${p['nombre'] ?? ''} ${p['apellido'] ?? ''}'.trim();
+                    final nombre =
+                        '${p['nombre'] ?? ''} ${p['apellido'] ?? ''}'.trim();
                     final doc = p['numero_documento'] ?? p['documento'] ?? '';
                     final tipo = (p['tipo_persona_legible'] ??
                             (p['tipo_persona'] == 'ADUT'
@@ -495,14 +515,20 @@ class _PassengersSection extends StatelessWidget {
 
                     return ListTile(
                       leading: const Icon(Icons.person, color: blackBeePay),
-                      title: Text(nombre.isEmpty ? 'Pasajero' : nombre, style: semibold(blackBeePay, 14)),
+                      title: Text(nombre.isEmpty ? 'Pasajero' : nombre,
+                          style: semibold(blackBeePay, 14)),
                       subtitle: Text(
-                        [if (doc.toString().isNotEmpty) 'Doc: $doc', if (tipo.isNotEmpty) 'Tipo: $tipo'].join('  •  '),
+                        [
+                          if (doc.toString().isNotEmpty) 'Doc: $doc',
+                          if (tipo.isNotEmpty) 'Tipo: $tipo'
+                        ].join('  •  '),
                         style: regular(gris6, 12),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, color: gris6),
-                        onPressed: () => context.read<InfoReservaCubit>().removePassengerAt(i),
+                        onPressed: () => context
+                            .read<InfoReservaCubit>()
+                            .removePassengerAt(i),
                       ),
                     );
                   },
@@ -522,7 +548,8 @@ class _BillingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<InfoReservaCubit>();
-    final razonCtrl = TextEditingController(text: cubit.state.razonSocial ?? '');
+    final razonCtrl =
+        TextEditingController(text: cubit.state.razonSocial ?? '');
     final nitCtrl = TextEditingController(text: cubit.state.nit ?? '');
 
     return _ReCard(
@@ -534,28 +561,30 @@ class _BillingCard extends StatelessWidget {
             Text('Datos de facturación', style: bold(blackBeePay, 16)),
             _DividerThin(),
             const SizedBox(height: 4),
-
             Text('Razón Social', style: regular(gris6, 13)),
             TextField(
               controller: razonCtrl,
               decoration: const InputDecoration(
                 hintText: ' ',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setRazon,
             ),
             const SizedBox(height: 14),
-
-            Text('Número de Identificación Tributaria', style: regular(gris6, 13)),
+            Text('Número de Identificación Tributaria',
+                style: regular(gris6, 13)),
             TextField(
               controller: nitCtrl,
-              keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                  signed: true, decimal: true),
               decoration: const InputDecoration(
                 hintText: ' ',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setNit,
@@ -606,7 +635,6 @@ class _ContactCardState extends State<_ContactCard> {
             Text('Detalles de Contacto', style: bold(blackBeePay, 16)),
             _DividerThin(),
             const SizedBox(height: 4),
-
             Text('Correo electrónico', style: regular(gris6, 13)),
             TextField(
               controller: _emailCtrl,
@@ -614,34 +642,33 @@ class _ContactCardState extends State<_ContactCard> {
               decoration: const InputDecoration(
                 hintText: ' ',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
               style: regular(blackBeePay, 16),
               onChanged: cubit.setEmail,
             ),
             const SizedBox(height: 14),
-
             Text('Número de teléfono', style: regular(gris6, 13)),
-            InternationalPhoneNumberInput(
-              onInputChanged: (p) => cubit.setPhone(p),
-              initialValue: cubit.state.phone,
-              selectorConfig: const SelectorConfig(
-                selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                useBottomSheetSafeArea: true,
-                showFlags: true,
-              ),
-              autoValidateMode: AutovalidateMode.disabled,
-              ignoreBlank: false,
-              textFieldController: _phoneCtrl,
-              keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
-              inputDecoration: const InputDecoration(
-                hintText: ' ',
+            TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                hintText: '+591 70000000',
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: gris3)),
               ),
-              inputBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: gris3),
-              ),
+              style: regular(blackBeePay, 16),
+              onChanged: (val) {
+                try {
+                  final parsed =
+                      PhoneNumber.parse(val, callerCountry: IsoCode.BO);
+                  cubit.setPhone(parsed);
+                } catch (e) {
+                  // número inválido → puedes mostrar error si quieres
+                }
+              },
             ),
           ],
         ),
@@ -686,14 +713,17 @@ class _BottomBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${f.totalCurrency}. ${f.totalAmountFee}', style: semibold(blackBeePay, 20)),
+                    Text('${f.totalCurrency}. ${f.totalAmountFee}',
+                        style: semibold(blackBeePay, 20)),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.local_fire_department, size: 16, color: amber),
+                        const Icon(Icons.local_fire_department,
+                            size: 16, color: amber),
                         const SizedBox(width: 6),
-                        Text('Desde ${f.puntos} BeePuntos', style: medium(amber, 16)),
+                        Text('Desde ${f.puntos} BeePuntos',
+                            style: medium(amber, 16)),
                       ],
                     ),
                   ],
@@ -702,22 +732,28 @@ class _BottomBar extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   final form = context.read<InfoReservaCubit>().state;
-                  if ((form.email ?? '').isEmpty || (form.razonSocial ?? '').isEmpty || (form.nit ?? '').isEmpty) {
+                  if ((form.email ?? '').isEmpty ||
+                      (form.razonSocial ?? '').isEmpty ||
+                      (form.nit ?? '').isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Completá email, razón social y NIT')),
+                      const SnackBar(
+                          content: Text('Completá email, razón social y NIT')),
                     );
                     return;
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Flujo de pago pendiente de integrar')),
+                    const SnackBar(
+                        content: Text('Flujo de pago pendiente de integrar')),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: amber,
                   foregroundColor: blanco,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 ),
                 child: Text('Ir a pagar', style: semibold(blanco, 18)),
               ),
