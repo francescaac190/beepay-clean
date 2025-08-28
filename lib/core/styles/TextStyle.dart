@@ -75,7 +75,8 @@ TextStyle thin(Color color, double tam) {
   );
 }
 
-TextStyle lightItlic(Color color, double tam) { // (nombre preservado)
+TextStyle lightItlic(Color color, double tam) {
+  // (nombre preservado)
   return TextStyle(
     fontFamily: _kFontFamily,
     fontSize: tam,
@@ -125,7 +126,8 @@ TextStyle text(Color color, double tam) {
   );
 }
 
-TextStyle boldITalic(Color color, double tam) { // (nombre preservado)
+TextStyle boldITalic(Color color, double tam) {
+  // (nombre preservado)
   return TextStyle(
     fontFamily: _kFontFamily,
     fontSize: tam,

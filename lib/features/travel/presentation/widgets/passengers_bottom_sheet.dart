@@ -111,6 +111,7 @@ class PassengersButton extends StatelessWidget {
                     onDec: decA,
                     onInc: incA,
                   ),
+                  addVerticalSpace(8),
                   _rowStepper(
                     label: 'Niños',
                     icon: Icons.child_care,
@@ -120,6 +121,7 @@ class PassengersButton extends StatelessWidget {
                     onDec: decK,
                     onInc: incK,
                   ),
+                  addVerticalSpace(8),
                   _rowStepper(
                     label: 'Bebés',
                     icon: Icons.stroller,
@@ -148,6 +150,7 @@ class PassengersButton extends StatelessWidget {
                       child: Text('Aplicar', style: semibold(blanco, 16)),
                     ),
                   ),
+                  addVerticalSpace(16),
                 ],
               ),
             );
@@ -173,13 +176,13 @@ class PassengersButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: gris7),
+          Icon(icon, color: gris6),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: semibold(blackBeePay, 16))),
+          Expanded(child: Text(label, style: medium(blackBeePay, 16))),
           _circleIcon(Icons.remove_circle_outline, cDec, canDec ? onDec : null),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text('$value', style: bold(blackBeePay, 16)),
+            child: Text('$value', style: medium(blackBeePay, 16)),
           ),
           _circleIcon(Icons.add_circle_outline, cInc, canInc ? onInc : null),
         ],

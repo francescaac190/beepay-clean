@@ -9,7 +9,7 @@ import '../bloc/travel_bloc.dart';
 import '../bloc/travel_event.dart';
 import '../bloc/travel_state.dart';
 import '../widgets/passengers_bottom_sheet.dart';
-import '../../../resultados/presentation/screens/resultados_screen.dart';
+import 'resultados_screen.dart';
 
 class TravelScreen extends StatefulWidget {
   const TravelScreen({super.key});
@@ -386,17 +386,11 @@ class _TravelScreenState extends State<TravelScreen>
                       final s = bloc.state;
                       final now = DateTime.now();
 
-                      // Origen/Destino obligatorios
                       if (s.origin == null || s.destination == null) {
                         MensajeError(context, 'Seleccioná origen y destino');
-                        // ScaffoldMessenger.of(context).showSnackBar(
-                        //   const SnackBar(
-                        //       content: Text('Seleccioná origen y destino')),
-                        // );
                         return;
                       }
 
-                      // Inyectar fechas por defecto si faltan
                       if (s.tripType == 'OW') {
                         final d = s.oneWayDate ?? now;
                         if (s.oneWayDate == null)
@@ -410,23 +404,15 @@ class _TravelScreenState extends State<TravelScreen>
                         }
                       }
 
-                      // Enviar eventos y navegar con el mismo bloc
                       bloc
                         ..add(TravelSubmit())
                         ..add(TravelSearchFlights());
+
+                      // 👉 Navegación única, pasando el mismo bloc
                       Navigator.pushNamed(
                         context,
                         '/resultados',
                         arguments: bloc,
-                      );
-
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: bloc,
-                            child: const ResultadosScreen(),
-                          ),
-                        ),
                       );
                     },
                     child: Text('Buscar vuelos', style: semibold(blanco, 18)),
@@ -512,7 +498,7 @@ class _TripTypeDropdown extends StatelessWidget {
         items: opciones
             .map((v) => DropdownMenuItem(
                   value: v,
-                  child: Text(v, style: semibold(gris7, 14)),
+                  child: Text(v, style: medium(blackBeePay, 14)),
                 ))
             .toList(),
         onChanged: (v) {
@@ -633,32 +619,62 @@ class _AirportAutocomplete extends StatelessWidget {
               _forceOpenNow(textController);
             }
           },
-          child: TextField(
-            controller: textController,
-            focusNode: fn,
-            onTap: () {
-              _forceOpenNow(textController);
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: textController,
+            builder: (context, value, _) {
+              final showHint = value.text.isEmpty;
+              return Stack(
+                alignment: Alignment.centerLeft, // ← centra verticalmente
+                children: [
+                  TextField(
+                    controller: textController,
+                    maxLines: 2,
+                    textAlignVertical: TextAlignVertical.center,
+                    focusNode: fn,
+                    onTap: () => _forceOpenNow(textController),
+                    decoration: InputDecoration(
+                      // ¡Ojo! SIN hintText aquí
+                      filled: false,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.close, size: 18, color: gris5),
+                        onPressed: () {
+                          controller.clear();
+                          onClear();
+                          _forceOpenNow(textController);
+                        },
+                      ),
+                    ),
+                    style: medium(blackBeePay, 15),
+                  ),
+
+                  // Hint personalizado, centrado vertical y alineado a la izquierda
+                  if (showHint)
+                    IgnorePointer(
+                      ignoring: true, // no bloquea el tap ni el cursor
+                      child: Padding(
+                        // iguala el padding horizontal del TextField para que el hint “caiga” en el mismo lugar
+                        padding: const EdgeInsets.only(left: 12, right: 48),
+                        // ↑ ajusta right si el hint choca con el suffixIcon
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            label,
+                            style: medium(gris6, 14),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
-            decoration: InputDecoration(
-              hintText: label,
-              hintStyle: medium(gris6, 14),
-              filled: false,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              suffixIcon: IconButton(
-                icon: Icon(Icons.close, size: 18, color: gris5),
-                onPressed: () {
-                  controller.clear();
-                  onClear();
-                  _forceOpenNow(textController);
-                },
-              ),
-            ),
-            style: medium(blackBeePay, 15),
           ),
         );
       },
@@ -678,7 +694,12 @@ class _AirportAutocomplete extends StatelessWidget {
               child: ListView.separated(
                 padding: EdgeInsets.zero,
                 itemCount: opts.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, __) => const Divider(
+                  height: 0.5,
+                  color: gris1,
+                  indent: 6,
+                  endIndent: 6,
+                ),
                 itemBuilder: (_, i) {
                   final ap = opts.elementAt(i);
                   return ListTile(

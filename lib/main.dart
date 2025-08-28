@@ -2,10 +2,11 @@
 import 'package:beepay/core/config/app_config.dart';
 import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:beepay/features/resetpw/presentation/bloc/recupera_bloc.dart';
-import 'package:beepay/features/resultados/presentation/screens/resultados_screen.dart'
-    show ResultadosScreen;
+// import 'package:beepay/features/resultados/presentation/screens/resultados_screen.dart'
+//     show ResultadosScreen;
 import 'package:beepay/features/travel/presentation/screens/agregar_pasajeros_screen.dart';
 import 'package:beepay/features/travel/presentation/screens/pasajeros_list_screen.dart';
+import 'package:beepay/features/travel/presentation/screens/resultados_screen.dart';
 import 'package:beepay/injection_container.dart';
 import 'package:beepay/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -36,9 +37,6 @@ import 'features/travel/data/repositories/travel_repository_impl.dart';
 import 'features/travel/presentation/screens/info_reserva.dart';
 import 'core/config/secure_storage_service.dart';
 
-
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: "assets/.env");
@@ -58,6 +56,9 @@ void main() async {
 
   await checkBiometricSupport();
 
+  // Debug de env
+  // ignore: avoid_print
+  print("ENV: ${AppConfig.environment}");
   // Debug de env
   // ignore: avoid_print
   print("ENV: ${AppConfig.environment}");
@@ -139,18 +140,24 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: SplashScreen(),
         routes: {
+          // Auth / Home
           '/login': (context) => const LoginStructure(),
           '/register': (context) => RegisterScreen(),
           '/recupera': (context) => RecuperaScreen(),
           '/ver_cuenta': (context) => VerCuentaScreen(),
           '/home': (context) => const HomeMain(),
 
+          // Alias usado por pantallas de pasajeros ante 401
+          '/h': (context) => const HomeMain(),
+
           // Travel
           '/travel': (context) => const TravelRoute(),
 
           // Pasajeros (usar SIEMPRE estas rutas)
+          // Pasajeros (usar SIEMPRE estas rutas)
           '/pasajeros': (context) => const PasajerosListScreen(),
           '/pasajeros/agregar': (context) => const AgregarPasajerosScreen(),
+          // alias legacy si algo aún usa ese path
           // alias legacy si algo aún usa ese path
           '/listapasajeros': (context) => const PasajerosListScreen(),
         },

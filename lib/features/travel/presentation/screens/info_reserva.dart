@@ -1,5 +1,6 @@
 // lib/features/travel/presentation/screens/info_reserva.dart
 import 'dart:math';
+import 'package:beepay/features/home/presentation/bloc/perfil_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:intl_phone_number_input/intl_phone_number_input.dart'; // ← eliminado
@@ -219,8 +220,6 @@ class InfoReservaScreen extends StatelessWidget {
 
                 // ---------- DETALLES DE CONTACTO ----------
                 const _ContactCard(),
-
-                const SizedBox(height: 90), // espacio para el bottom bar
               ],
             );
           },
@@ -293,14 +292,18 @@ class _LegsHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(legs.first.departureTime,
-                      style: extraBold(blackBeePay, 14)),
-                  Text(legs.first.departureAirport, style: semibold(gris7, 13)),
-                  Text(legs.first.departureCiudad, style: regular(gris6, 12)),
-                ],
+              SizedBox(
+                width: 120,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(legs.first.departureTime,
+                        style: extraBold(blackBeePay, 14)),
+                    Text(legs.first.departureAirport,
+                        style: semibold(gris7, 13)),
+                    Text(legs.first.departureCiudad, style: regular(gris6, 12)),
+                  ],
+                ),
               ),
               const Spacer(),
               Column(
@@ -314,14 +317,18 @@ class _LegsHeader extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(legs.last.arrivalTime,
-                      style: extraBold(blackBeePay, 14)),
-                  Text(legs.last.arrivalAirport, style: semibold(gris7, 13)),
-                  Text(legs.last.arrivalCiudad, style: regular(gris6, 12)),
-                ],
+              SizedBox(
+                width: 120,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(legs.last.arrivalTime,
+                        style: extraBold(blackBeePay, 14)),
+                    Text(legs.last.arrivalAirport, style: semibold(gris7, 13)),
+                    Text(legs.last.arrivalCiudad,
+                        textAlign: TextAlign.end, style: regular(gris6, 12)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -509,15 +516,56 @@ class _AddPassengerButton extends StatelessWidget {
 }
 
 /// ------------ CARD: DATOS DE FACTURACIÓN -------------
-class _BillingCard extends StatelessWidget {
+class _BillingCard extends StatefulWidget {
   const _BillingCard();
+
+  @override
+  State<_BillingCard> createState() => _BillingCardState();
+}
+
+class _BillingCardState extends State<_BillingCard> {
+  late TextEditingController _razonCtrl;
+  late TextEditingController _nitCtrl;
+  final FocusNode _nitFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    final cubit = context.read<InfoReservaCubit>();
+    _razonCtrl = TextEditingController(text: cubit.state.razonSocial ?? '');
+    _nitCtrl = TextEditingController(text: cubit.state.nit ?? '');
+  }
+
+  @override
+  void dispose() {
+    _razonCtrl.dispose();
+    _nitCtrl.dispose();
+    _nitFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<InfoReservaCubit>();
-    final razonCtrl =
-        TextEditingController(text: cubit.state.razonSocial ?? '');
-    final nitCtrl = TextEditingController(text: cubit.state.nit ?? '');
+
+    // Tomamos la lista de facturas del perfil, sólo se reconstruye si cambia esa lista
+    final facturas = context.select<PerfilBloc, List<_Factura>>((bloc) {
+      final st = bloc.state;
+      if (st is PerfilLoaded) {
+        // ⚠️ Ajusta los nombres a tu entidad real
+        final items = st.perfil.facturacion ?? <dynamic>[];
+        return items
+            .map<_Factura>((e) {
+              final razon =
+                  (e.razonSocial ?? e.razon ?? e.nombre ?? '').toString();
+              final nit = (e.nit ?? '').toString();
+              return _Factura(razon: razon, nit: nit);
+            })
+            .where((f) => f.razon.isNotEmpty)
+            .toList();
+      }
+      return const <_Factura>[];
+    });
 
     return _ReCard(
       child: Padding(
@@ -529,35 +577,102 @@ class _BillingCard extends StatelessWidget {
             _DividerThin(),
             const SizedBox(height: 4),
 
-            // Razón Social
+            // Razón Social con sugerencias
             Text('Razón Social', style: regular(gris6, 13)),
-            TextField(
-              controller: razonCtrl,
-              decoration: InputDecoration(
-                hintText: ' ',
-                hintStyle: regular(gris6, 14),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: gris3),
-                ),
-              ),
-              style: regular(blackBeePay, 16),
-              onChanged: cubit.setRazon,
+            RawAutocomplete<_Factura>(
+              optionsBuilder: (value) {
+                final q = value.text.trim().toLowerCase();
+                if (q.isEmpty) return facturas;
+                return facturas.where((f) =>
+                    f.razon.toLowerCase().contains(q) || f.nit.contains(q));
+              },
+              displayStringForOption: (f) => f.razon,
+              onSelected: (f) => _selectFactura(f, cubit),
+              fieldViewBuilder:
+                  (context, textCtrl, focusNode, onFieldSubmitted) {
+                // Usamos el controller del autocomplete para este campo
+                textCtrl.value = _razonCtrl.value;
+                _razonCtrl = textCtrl;
+
+                return TextField(
+                  controller: _razonCtrl,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    hintText: ' ',
+                    hintStyle: regular(gris6, 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: gris3),
+                    ),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (facturas.isNotEmpty)
+                          IconButton(
+                            tooltip: 'Elegir de mis facturas',
+                            icon: const Icon(Icons.expand_more, color: gris6),
+                            onPressed: () => _openSheet(facturas, cubit),
+                          ),
+                        if (_razonCtrl.text.isNotEmpty)
+                          IconButton(
+                            icon:
+                                const Icon(Icons.clear, color: gris5, size: 20),
+                            onPressed: () {
+                              _razonCtrl.clear();
+                              cubit.setRazon('');
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  style: regular(blackBeePay, 16),
+                  onChanged: cubit.setRazon,
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: options.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 0.5, color: gris1),
+                      itemBuilder: (_, i) {
+                        final f = options.elementAt(i);
+                        return ListTile(
+                          leading: const Icon(Icons.receipt_long_outlined,
+                              color: blackBeePay),
+                          title: Text(f.razon,
+                              style: semibold(blackBeePay, 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle:
+                              Text('NIT: ${f.nit}', style: regular(gris6, 12)),
+                          onTap: () => onSelected(f),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 14),
 
-            // NIT
+            // NIT (se rellena al elegir una factura)
             Text('Número de Identificación Tributaria',
                 style: regular(gris6, 13)),
             TextField(
-              controller: nitCtrl,
+              controller: _nitCtrl,
+              focusNode: _nitFocus,
               keyboardType: const TextInputType.numberWithOptions(
                   signed: true, decimal: true),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: ' ',
-                hintStyle: regular(gris6, 14),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                focusedBorder: const UnderlineInputBorder(
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                focusedBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: gris3),
                 ),
               ),
@@ -569,6 +684,50 @@ class _BillingCard extends StatelessWidget {
       ),
     );
   }
+
+  void _selectFactura(_Factura f, InfoReservaCubit cubit) {
+    _razonCtrl.text = f.razon;
+    _nitCtrl.text = f.nit;
+    cubit.setRazon(f.razon);
+    cubit.setNit(f.nit);
+    _nitFocus.requestFocus();
+  }
+
+  void _openSheet(List<_Factura> facturas, InfoReservaCubit cubit) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: facturas.length,
+          separatorBuilder: (_, __) => const Divider(height: 0.5, color: gris1),
+          itemBuilder: (_, i) {
+            final f = facturas[i];
+            return ListTile(
+              leading:
+                  const Icon(Icons.receipt_long_outlined, color: blackBeePay),
+              title: Text(f.razon, style: semibold(blackBeePay, 14)),
+              subtitle: Text('NIT: ${f.nit}', style: regular(gris6, 12)),
+              onTap: () {
+                Navigator.pop(context);
+                _selectFactura(f, cubit);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _Factura {
+  final String razon;
+  final String nit;
+  const _Factura({required this.razon, required this.nit});
 }
 
 /// ------------ CARD: DETALLES DE CONTACTO -------------

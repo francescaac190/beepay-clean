@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/cores.dart';
-import '../../../travel/presentation/bloc/travel_bloc.dart';
-import '../../../travel/presentation/bloc/travel_event.dart';
-import '../../../travel/presentation/bloc/travel_state.dart';
-import '../../../travel/domain/entities/flight.dart';
+import '../bloc/travel_bloc.dart';
+import '../bloc/travel_event.dart';
+import '../bloc/travel_state.dart';
+import '../../domain/entities/flight.dart';
 
 class ResultadosScreen extends StatelessWidget {
   const ResultadosScreen({super.key});
@@ -197,6 +197,88 @@ class _SortDropdown extends StatelessWidget {
 class _FlightCard extends StatelessWidget {
   final Flight f;
   const _FlightCard(this.f);
+// Intenta parsear 'YYYY-MM-DD' seguro
+  DateTime? _parseYmd(String ymd) {
+    try {
+      return DateTime.parse(ymd);
+    } catch (_) {
+      return null;
+    }
+  }
+
+// Extrae HH:mm → (hour, minute)
+  ({int h, int m}) _parseHm(String hm) {
+    final parts = hm.split(':');
+    final h = int.tryParse(parts[0].replaceAll(RegExp(r'\D'), '')) ?? 0;
+    final m = int.tryParse(
+            parts.length > 1 ? parts[1].replaceAll(RegExp(r'\D'), '') : '0') ??
+        0;
+    return (h: h, m: m);
+  }
+
+// Detecta "+1", "+2" en la hora de llegada
+  int _arrivalDayOffset(String horaLlegada) {
+    final m = RegExp(r'\+(\d+)').firstMatch(horaLlegada);
+    if (m != null) return int.tryParse(m.group(1)!) ?? 0;
+    return 0;
+  }
+
+// Si existe arrivalDate en el último leg, úsalo; si no, intenta con sufijo "+1"/"+2"; si no, asume mismo día.
+  Duration _calcJourneyDuration(List<Leg> legs) {
+    final first = legs.first;
+    final last = legs.last;
+
+    // Estas propiedades existen en tu modelo para departure:
+    final depDate = _parseYmd(first.departureDate);
+    final depHm = _parseHm(first.departureTime);
+
+    // Intentos para arrival:
+    // 1) arrivalDate si tu entidad lo tiene (ajústalo si la propiedad exacta es diferente)
+    DateTime? arrDate = null;
+    try {
+      // Si tu modelo tiene last.arrivalDate, descomenta esta línea:
+      // arrDate = _parseYmd(last.arrivalDate);
+    } catch (_) {}
+
+    final arrHm = _parseHm(last.arrivalTime);
+
+    if (depDate == null) return Duration.zero;
+
+    // Construye la salida
+    final depDT =
+        DateTime(depDate.year, depDate.month, depDate.day, depHm.h, depHm.m);
+
+    // Construye la llegada
+    DateTime arrDT;
+    if (arrDate != null) {
+      arrDT =
+          DateTime(arrDate.year, arrDate.month, arrDate.day, arrHm.h, arrHm.m);
+    } else {
+      // Sin arrivalDate explícita: deduce por sufijo +N o asume mismo día
+      final offset = _arrivalDayOffset(last.arrivalTime);
+      arrDT =
+          DateTime(depDate.year, depDate.month, depDate.day, arrHm.h, arrHm.m)
+              .add(Duration(days: offset));
+
+      // Salvaguarda: si sin sufijo quedara antes que la salida (ej. cruce de medianoche), suma 1 día
+      if (offset == 0 && arrDT.isBefore(depDT)) {
+        arrDT = arrDT.add(const Duration(days: 1));
+      }
+    }
+
+    final d = arrDT.difference(depDT);
+    // Evita negativos por datos raros
+    return d.isNegative ? Duration.zero : d;
+  }
+
+// Formatea "X h Y min"
+  String _fmtDur(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    if (h == 0) return '$m min';
+    if (m == 0) return '${h} h';
+    return '${h} h ${m} min';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +292,9 @@ class _FlightCard extends StatelessWidget {
 
     final idaTitle = 'Ida: ${ida.first.departureDateOfWeekName}, '
         '${_dd(ida.first.departureDate)} de ${ida.first.mesDeparture} de ${ida.first.departureDate.substring(0, 4)}';
+    final idaDur = _fmtDur(_calcJourneyDuration(ida));
+    final vueltaDur =
+        vuelta != null ? _fmtDur(_calcJourneyDuration(vuelta)) : null;
 
     return InkWell(
       onTap: () {
@@ -244,6 +329,7 @@ class _FlightCard extends StatelessWidget {
                 horaLlegada: ida.last.arrivalTime,
                 aeLlegada: ida.last.arrivalAirport,
                 ciudadLlegada: ida.last.arrivalCiudad,
+                duracionTotal: idaDur, // ← NUEVO
               ),
               _equipajeNote(ida.last.equipaje),
               if (vuelta != null) ...[
@@ -258,6 +344,7 @@ class _FlightCard extends StatelessWidget {
                   horaLlegada: vuelta.last.arrivalTime,
                   aeLlegada: vuelta.last.arrivalAirport,
                   ciudadLlegada: vuelta.last.arrivalCiudad,
+                  duracionTotal: vueltaDur, // ← NUEVO
                 ),
                 _equipajeNote(vuelta.last.equipaje),
               ],
@@ -266,6 +353,7 @@ class _FlightCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('TOTAL', style: black(gris7, 18)),
                     Column(
@@ -286,8 +374,10 @@ class _FlightCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.local_fire_department,
-                                  size: 16, color: amber),
+                              Image.asset(
+                                'assets/iconos/Polygon 2.png',
+                                height: 16,
+                              ),
                               const SizedBox(width: 6),
                               Text('Desde ${f.puntos} BeePuntos',
                                   style: semibold(amber, 13)),
@@ -317,6 +407,7 @@ class _FlightCard extends StatelessWidget {
               : Image.network(
                   logoUrl,
                   height: 28,
+                  width: 70,
                   errorBuilder: (_, __, ___) =>
                       const Icon(Icons.flight, color: amber),
                 ),
@@ -336,13 +427,14 @@ class _FlightCard extends StatelessWidget {
     required String horaLlegada,
     required String aeLlegada,
     required String ciudadLlegada,
+    String? duracionTotal, // ← NUEVO (opcional)
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
           const Icon(Icons.flight_takeoff, color: blackBeePay),
-          const SizedBox(width: 12),
+          const SizedBox(width: 24),
           SizedBox(
             width: 96,
             child: Column(
@@ -356,12 +448,26 @@ class _FlightCard extends StatelessWidget {
           ),
           const Spacer(),
           Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 conexiones >= 1 ? 'Conexiones: $conexiones' : 'Directo',
                 style: semibold(gris6, 12),
               ),
               Text(vuelo, style: semibold(blackBeePay, 13)),
+              if (duracionTotal != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 14, color: gris6),
+                    const SizedBox(width: 4),
+                    Text(
+                      duracionTotal,
+                      style: semibold(gris6, 12),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
           const Spacer(),
