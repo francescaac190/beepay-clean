@@ -414,6 +414,11 @@ class _TravelScreenState extends State<TravelScreen>
                       bloc
                         ..add(TravelSubmit())
                         ..add(TravelSearchFlights());
+                      Navigator.pushNamed(
+                        context,
+                        '/resultados',
+                        arguments: bloc,
+                      );
 
                       Navigator.of(context).push(
                         MaterialPageRoute(
