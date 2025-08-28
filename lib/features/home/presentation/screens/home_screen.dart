@@ -13,44 +13,47 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<PerfilBloc>().add(GetPerfilEvent()); // recarga perfil
-        await Future.delayed(const Duration(milliseconds: 250));
-      },
-      color: amber,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(10),
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Expanded(flex: 2, child: PerfilWidget()),
-                SizedBox(width: 12),
-                Expanded(flex: 2, child: SaldoWidget()),
-              ],
-            ),
-            addVerticalSpace(16),
-            CustomButton(
-              text: 'Pagar con BeePay',
-              onPressed: () => debugPrint('pagars'),
-              width: double.infinity,
-              height: 45,
-              color: amber,
-              textColor: blanco,
-            ),
-            addVerticalSpace(16),
-            const TransferirRecargarWidget(),
-            addVerticalSpace(16),
-            SizedBox(width: double.infinity, child: CarouselWidget()),
-            addVerticalSpace(24),
-            const DudasConsultasWidget(),
-            addVerticalSpace(36),
-          ],
+    return Scaffold(
+      backgroundColor: background2,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          context.read<PerfilBloc>().add(GetPerfilEvent()); // recarga perfil
+          await Future.delayed(const Duration(milliseconds: 250));
+        },
+        color: amber,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(10),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(flex: 2, child: PerfilWidget()),
+                  SizedBox(width: 12),
+                  Expanded(flex: 2, child: SaldoWidget()),
+                ],
+              ),
+              addVerticalSpace(16),
+              CustomButton(
+                text: 'Pagar con BeePay',
+                onPressed: () => debugPrint('pagars'),
+                width: double.infinity,
+                height: 45,
+                color: amber,
+                textColor: blanco,
+              ),
+              addVerticalSpace(16),
+              const TransferirRecargarWidget(),
+              addVerticalSpace(16),
+              SizedBox(width: double.infinity, child: CarouselWidget()),
+              addVerticalSpace(24),
+              const DudasConsultasWidget(),
+              addVerticalSpace(36),
+            ],
+          ),
         ),
       ),
     );

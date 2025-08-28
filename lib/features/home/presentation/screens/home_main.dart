@@ -82,7 +82,7 @@ class _HomeMainState extends State<HomeMain> {
       case 0:
         return BlocProvider(
           create: (_) => PerfilBloc(_getCompletoUseCase)..add(GetPerfilEvent()),
-          child:  HomeScreen(),
+          child: HomeScreen(),
         );
       case 1:
         return const CategoriesScreen();
@@ -95,7 +95,7 @@ class _HomeMainState extends State<HomeMain> {
       default:
         return BlocProvider(
           create: (_) => PerfilBloc(_getCompletoUseCase)..add(GetPerfilEvent()),
-          child:  HomeScreen(),
+          child: HomeScreen(),
         );
     }
   }
@@ -105,7 +105,7 @@ class _HomeMainState extends State<HomeMain> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: background2,
+        // backgroundColor: background2,
         body: SafeArea(bottom: false, child: _buildBody()),
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
@@ -116,11 +116,17 @@ class _HomeMainState extends State<HomeMain> {
           unselectedLabelStyle: regular(gris7, 12),
           onTap: _onItemTapped,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.category_rounded), label: 'Categorías'),
-            BottomNavigationBarItem(icon: Icon(Icons.confirmation_number_rounded), label: 'Tickets'),
-            BottomNavigationBarItem(icon: Icon(Icons.swap_horiz_rounded), label: 'Historial'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Perfil'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.home_rounded), label: 'Inicio'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.category_rounded), label: 'Categorías'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.confirmation_number_rounded),
+                label: 'Tickets'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.swap_horiz_rounded), label: 'Historial'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.person_rounded), label: 'Perfil'),
           ],
         ),
       ),
@@ -142,13 +148,18 @@ class _HomeMainState extends State<HomeMain> {
                 style: regular(blackBeePay, 16),
               ),
               addVerticalSpace(10),
-              Center(child: Text(pin, textAlign: TextAlign.center, style: bold(blackBeePay, 24))),
+              Center(
+                  child: Text(pin,
+                      textAlign: TextAlign.center,
+                      style: bold(blackBeePay, 24))),
             ],
           ),
         ),
         actions: <Widget>[
           TextButton(
-            style: ButtonStyle(backgroundColor: MaterialStatePropertyAll(Colors.amber.shade100)),
+            style: ButtonStyle(
+                backgroundColor:
+                    MaterialStatePropertyAll(Colors.amber.shade100)),
             child: Text("Siguiente", style: medium(amber, 15)),
             onPressed: () => Navigator.pop(context),
           ),
@@ -168,22 +179,40 @@ class _HomeMainState extends State<HomeMain> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Guardá tus datos para facturación", style: regular(blackBeePay, 15)),
+            Text("Guardá tus datos para facturación",
+                style: regular(blackBeePay, 15)),
             CustomTextFormField(
-              razonController, TextInputType.name, TextCapitalization.words, false, 'Razón Social',
-              (value) => (value == null || value.isEmpty) ? "Ingrese un nombre válido" : null, null,
+              razonController,
+              TextInputType.name,
+              TextCapitalization.words,
+              false,
+              'Razón Social',
+              (value) => (value == null || value.isEmpty)
+                  ? "Ingrese un nombre válido"
+                  : null,
+              null,
             ),
             CustomTextFormField(
-              nitController, TextInputType.number, TextCapitalization.none, false, 'NIT',
-              (value) => (value == null || value.isEmpty) ? "Ingrese un nit válido" : null, null,
+              nitController,
+              TextInputType.number,
+              TextCapitalization.none,
+              false,
+              'NIT',
+              (value) => (value == null || value.isEmpty)
+                  ? "Ingrese un nit válido"
+                  : null,
+              null,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancelar", style: medium(amber, 15))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancelar", style: medium(amber, 15))),
           TextButton(
             onPressed: () {
-              _homeService.postAgregarFactura(nitController.text, razonController.text);
+              _homeService.postAgregarFactura(
+                  nitController.text, razonController.text);
               Navigator.pop(context);
               razonController.clear();
               nitController.clear();
@@ -200,9 +229,12 @@ class _HomeMainState extends State<HomeMain> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text("Activación Biometría", style: semibold(blackBeePay, 17)),
-        content: const Text("Para usar Face ID / Touch ID activa esta opción en tu perfil."),
+        content: const Text(
+            "Para usar Face ID / Touch ID activa esta opción en tu perfil."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cerrar", style: medium(amber, 15))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cerrar", style: medium(amber, 15))),
           TextButton(
             onPressed: () {
               Navigator.pop(context);

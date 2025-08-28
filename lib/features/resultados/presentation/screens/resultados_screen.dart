@@ -23,10 +23,11 @@ class ResultadosScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: blackBeePay),
         ),
         centerTitle: true,
-        title: Text('Resultados', style: extraBold(blackBeePay, 18)),
+        title: Text('Resultados', style: semibold(blackBeePay, 18)),
       ),
       body: BlocBuilder<TravelBloc, TravelState>(
         builder: (context, s) {
@@ -42,19 +43,21 @@ class ResultadosScreen extends StatelessWidget {
                 color: blanco,
                 surfaceTintColor: blanco,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(titulo, style: extraBold(blackBeePay, 16)),
                       const SizedBox(height: 8),
                       Text(
                         'De: ${s.origin?.concatenacion ?? '-'}\nA: ${s.destination?.concatenacion ?? '-'}',
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.left,
                         style: semibold(gris7, 14),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
                         'Pasajeros: ${s.adults} adultos • ${s.kids} niños • ${s.babies} bebés',
                         style: semibold(gris6, 13),
@@ -84,7 +87,8 @@ class ResultadosScreen extends StatelessWidget {
                   color: blanco,
                   surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: const SizedBox(
                     height: 140,
                     child: Center(
@@ -100,7 +104,8 @@ class ResultadosScreen extends StatelessWidget {
                   color: blanco,
                   surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: SizedBox(
                     height: 140,
                     child: Center(
@@ -113,7 +118,8 @@ class ResultadosScreen extends StatelessWidget {
                   color: blanco,
                   surfaceTintColor: blanco,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: const SizedBox(
                     height: 140,
                     child: Center(
@@ -157,18 +163,27 @@ class _SortDropdown extends StatelessWidget {
         isDense: true,
         underline: const SizedBox.shrink(),
         icon: Icon(Icons.keyboard_arrow_down_rounded, color: gris6),
-        items: const [
+        items: [
           DropdownMenuItem(
             value: TravelSort.priceAsc,
-            child: Text('Más económico'),
+            child: Text(
+              'Más económico',
+              style: regular(blackBeePay, 15),
+            ),
           ),
           DropdownMenuItem(
             value: TravelSort.cashbackDesc,
-            child: Text('Más cashback'),
+            child: Text(
+              'Más cashback',
+              style: regular(blackBeePay, 15),
+            ),
           ),
           DropdownMenuItem(
             value: TravelSort.departureEarly,
-            child: Text('Más temprano'),
+            child: Text(
+              'Más temprano',
+              style: regular(blackBeePay, 15),
+            ),
           ),
         ],
         onChanged: (v) {
@@ -262,7 +277,8 @@ class _FlightCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 8),
                           decoration: BoxDecoration(
                             border: Border.all(width: 1.2, color: amber),
                             borderRadius: BorderRadius.circular(24),
@@ -270,9 +286,11 @@ class _FlightCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.local_fire_department, size: 16, color: amber),
+                              const Icon(Icons.local_fire_department,
+                                  size: 16, color: amber),
                               const SizedBox(width: 6),
-                              Text('Desde ${f.puntos} BeePuntos', style: semibold(amber, 13)),
+                              Text('Desde ${f.puntos} BeePuntos',
+                                  style: semibold(amber, 13)),
                             ],
                           ),
                         ),
@@ -299,7 +317,8 @@ class _FlightCard extends StatelessWidget {
               : Image.network(
                   logoUrl,
                   height: 28,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.flight, color: amber),
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.flight, color: amber),
                 ),
           const SizedBox(width: 10),
           Expanded(child: Text(title, style: semibold(gris7, 13))),
@@ -352,8 +371,10 @@ class _FlightCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(horaLlegada, style: extraBold(blackBeePay, 14)),
-                Text(aeLlegada, textAlign: TextAlign.end, style: semibold(gris7, 13)),
-                Text(ciudadLlegada, textAlign: TextAlign.end, style: regular(gris6, 12)),
+                Text(aeLlegada,
+                    textAlign: TextAlign.end, style: semibold(gris7, 13)),
+                Text(ciudadLlegada,
+                    textAlign: TextAlign.end, style: regular(gris6, 12)),
               ],
             ),
           ),
